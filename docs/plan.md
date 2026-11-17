@@ -109,10 +109,19 @@ pyproject.toml         a uv project
   - WorldPop puts 1.56M people in Central Bohemia, against ČSÚ's 1,385,141 on 1 Jan 2020 (12.5% high). Its area is right (10,914 km² against ČSÚ's 10,928), so the excess is WorldPop's distribution, which is only constrained to the national total, not the regridding. Moravian-Silesian is 2% low (1.18M against 1,200,539). Both caveats affect only the per-region totals.
 
 ### 3. Model, map and chart: release `v0.2.0`, status `in-progress`
+Split into three PRs.
+
+**3a. The map (PR)**
+- [x] Draw the population grid on the stage: "lights go out" colours from demo-local `--zo-*` tokens, light and dark themes, region and national borders, and a status-line readout of the cell under the pointer.
+- [x] Checked in Edge: standalone, with phone layout, and embedded as the site does it (under `/demos/zombie-outbreak/`, with `data-embedded` and `data-theme`).
+
+**3b. The model (PR)**
 - [ ] NumPy reference model, with pytest invariants (populations stay non-negative; S+Z+R is conserved apart from border losses).
 - [ ] JS solver in a worker, tested against the NumPy model on a small grid.
-- [ ] Map rendering and theming, the inset chart, scenarios and strains, the speed control, and the status line.
-- [ ] Rewrite the manifest: summary, tags, and `about`. Update `built`.
+
+**3c. Running it (PR, then release)**
+- [ ] Zombies and the dead on the map, the inset chart, scenarios and strains, the speed control, and the live status line.
+- [ ] Rewrite the manifest: summary, tags, and `about`. Update `built`. Replace `static.webp` with the opening state.
 
 ### 4. Quarantine: release `v1.0.0`, status `live`
 - [ ] Detection delay, freehand cordons, region sealing, and the shared build queue.
