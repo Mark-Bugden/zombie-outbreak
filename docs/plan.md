@@ -78,7 +78,7 @@ docs/                  this plan and the draft write-up
 pyproject.toml         a uv project
 ```
 
-- **Data format.** Not settled yet; to decide in step 2. Lean: one JSON file holding the grid metadata (size, cell size, CRS, origin) and base64-encoded typed arrays (population per cell as Uint16, kraj id, neighbour id for border cells). If size matters, deflate them and decode with `DecompressionStream`. The bundle must stay under 2 MB, and data files can only be `.json`, `.csv` or `.js`.
+- **Data format (settled in step 2).** One file, `demo/public/data/czechia.json`, about 140 KB. It holds the grid's metadata (size, cell size, CRS, origin), the regions, neighbours and city starts, and two typed arrays: population per cell (Uint16) and labels (Uint8: 1–14 are kraje, 21–24 are AT/DE/PL/SK). Both arrays are zlib-compressed and base64-encoded, and `demo/src/grid.js` decodes them with `DecompressionStream`. The grid is 511 × 319 cells with a margin of neighbouring country at least 2 cells deep, so every Czech cell has four neighbours inside the grid. The bundle must stay under 2 MB, and data files can only be `.json`, `.csv` or `.js`.
 - **CI.** The site contract's `demo.yml` stays exactly as specified. Tests (node:test, pytest, and the check of JS against Python) go in a separate workflow.
 
 ## Milestones
@@ -98,8 +98,15 @@ pyproject.toml         a uv project
 - [x] Rewrite `README.md`, add a `.gitignore`, and commit this plan.
 
 ### 2. Data prep (PR)
-- [ ] Set up the uv project. Reproject the population data, rasterise the kraje and neighbours, and write `demo/public/data/`.
-- [ ] Sanity checks: total population, the largest cities in the right places, and the kraj populations against official figures.
+- [x] Set up the uv project. Reproject the population data, rasterise the kraje and neighbours, and write `demo/public/data/`.
+- [x] Sanity checks: total population, the largest cities in the right places, and the kraj populations against official figures.
+- Results:
+  - The total is 10.75M (the 1 km² assumption gave 19.3M), and the regridding keeps it exactly.
+  - The Czech cells cover 78,653 km², against an official area of 78,871 km².
+  - Each city start lands in its own kraj.
+- Caveats:
+  - Natural Earth's 1:10m Moravian-Silesian/Olomouc boundary is coarse. Moravian-Silesian gets about 5,800 km², compared with about 5,400 km² officially.
+  - WorldPop puts 1.56M people in Central Bohemia, against ČSÚ's 1,385,141 on 1 Jan 2020 (12.5% high). Its area is right (10,914 km² against ČSÚ's 10,928), so the excess is WorldPop's distribution, which is only constrained to the national total, not the regridding. Moravian-Silesian is 2% low (1.18M against 1,200,539). Both caveats affect only the per-region totals.
 
 ### 3. Model, map and chart: release `v0.2.0`, status `in-progress`
 - [ ] NumPy reference model, with pytest invariants (populations stay non-negative; S+Z+R is conserved apart from border losses).

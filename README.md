@@ -11,7 +11,9 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 | Path | What it is |
 | --- | --- |
 | [`demo/`](demo/) | The interactive demo for [mark-bugden.github.io](https://mark-bugden.github.io/), built with [demo-kit](https://github.com/Mark-Bugden/demo-kit). Its README explains how to run and build it. |
-| [`Data/`](Data/) | Source data: WorldPop's 2020 population density raster for Czechia (see below). |
+| [`src/zombie_outbreak/`](src/zombie_outbreak/) | Python: the data prep that builds the demo's population grid. |
+| [`tests/`](tests/) | Python tests. |
+| [`Data/`](Data/) | Source data: WorldPop population density and Natural Earth boundaries. Its README lists sources and licences. |
 | [`docs/`](docs/) | The plan, and later the write-up. |
 | [`legacy/`](legacy/) | The original 2023 notebooks, kept for reference. |
 
@@ -21,7 +23,21 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 cd demo
 npm install
 npm run dev
+npm test          # unit tests
 ```
+
+## Rebuilding the data
+
+The demo's population grid, `demo/public/data/czechia.json`, is committed, so the demo builds without Python. To rebuild it, use [uv](https://docs.astral.sh/uv/):
+
+```sh
+uv sync
+uv run python -m zombie_outbreak.boundaries   # optional: re-fetch the Natural Earth boundaries
+uv run python -m zombie_outbreak.grid         # writes demo/public/data/czechia.json
+uv run pytest
+```
+
+The grid is Czechia on the equal-area ETRS89-LAEA grid (EPSG:3035) at 1 km. Each cell holds its population, and a label: its region, or for cells outside Czechia, the neighbouring country.
 
 ## Data
 
