@@ -1,0 +1,35 @@
+name: Demo
+
+on:
+  pull_request:
+  push:
+    tags: ['v*']
+
+jobs:
+  demo:
+    name: Build, validate and release the demo bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # creates the release on tag pushes
+    defaults:
+      run:
+        working-directory: demo
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: demo/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npx demo-kit validate dist/
+      - name: Attach demo-<slug>.zip to the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          slug=$(node -p "require('./public/manifest.json').slug")
+          (cd dist && zip -r "../demo-$slug.zip" .)
+          gh release create "$GITHUB_REF_NAME" "demo-$slug.zip" --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" --notes "Demo bundle for the site: demo-$slug.zip"
