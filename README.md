@@ -29,6 +29,10 @@ Population density comes from WorldPop: Czech Republic, 2020, 1 km resolution (3
 
 > WorldPop (www.worldpop.org - School of Geography and Environmental Science, University of Southampton; Department of Geography and Geosciences, University of Louisville; Departement de Geographie, Universite de Namur) and Center for International Earth Science Information Network (CIESIN), Columbia University (2018). Global High Resolution Population Denominators Project - Funded by The Bill and Melinda Gates Foundation (OPP1134076). https://dx.doi.org/10.5258/SOTON/WP00675
 
+## Licence
+
+The code is under the [MIT License](LICENSE). The WorldPop data in [`Data/`](Data/) is not covered by it: it stays under its own CC BY 4.0 licence (see Data above).
+
 ## History
 
 The project started in February 2023 as a pair of Jupyter notebooks and a Streamlit app. They ran an SIR model with migration on population maps of Germany and Czechia. In November 2026 it was rebuilt as an interactive browser demo. The repository history was rewritten at the same time to remove generated images and duplicate data files. The notebooks remain in [`legacy/`](legacy/).
