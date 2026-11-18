@@ -5,16 +5,19 @@
 // A frame's pixel buffer is transferred to the main thread, which hands it back as `spare` with a
 // later request, so the buffers are reused rather than reallocated.
 
-import { LAST_DAY } from '../strains.js';
+import { BUILD_SPEED, DETECTION_DAY, LAST_DAY } from '../strains.js';
 import { createEngine } from './engine.js';
 
-const engine = createEngine({ lastDay: LAST_DAY });
+const engine = createEngine({ lastDay: LAST_DAY, detectionDay: DETECTION_DAY, buildSpeed: BUILD_SPEED });
 
 const handlers = {
   init: ({ grid }) => engine.init(grid),
   colours: ({ colours }) => engine.setColours(colours),
   reset: (request) => (engine.reset(request), engine.frame()),
   params: ({ params }) => engine.setParams(params),
+  add: ({ item }) => engine.addItem(item),
+  undo: () => engine.undo(),
+  clear: () => engine.clear(),
   advance: ({ days }) => (engine.advance(days), engine.frame()),
   repaint: () => engine.frame(),
   probe: ({ cell }) => engine.probe(cell),

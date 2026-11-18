@@ -9,6 +9,11 @@ export const LAST_DAY = 365;
 export const PATIENTS_ZERO = 10;
 // Settings every run shares: the cutoff below which zombies cannot bite, and the clean-up level.
 export const FIXED = { threshold: 1, epsilon: 1e-3, dt: DT };
+// The quarantine's fixed settings, chosen with the strains so that a quarantine can win but has to
+// be quick (see docs/plan.md). The outbreak is hidden until the detection day, and the one build
+// crew starts work then, building this many km of cordon a day (one cell edge is 1 km).
+export const DETECTION_DAY = 7;
+export const BUILD_SPEED = 40;
 
 export const STRAINS = [
   {
