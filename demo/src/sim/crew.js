@@ -75,13 +75,18 @@ export function createQueue(cells) {
       });
     },
 
+    /** Every edge built once the crew has done `work` km; an edge two items share comes twice. */
+    *builtEdges(work) {
+      const counts = queue.built(work);
+      for (let k = 0; k < items.length; k++) {
+        for (let j = 0; j < counts[k]; j++) yield items[k].edges[j];
+      }
+    },
+
     /** Sets `blocks` (BLOCK_* bits per cell, see szr.js) to the edges built after `work` km. */
     fillBlocks(work, blocks) {
       blocks.fill(0);
-      queue.built(work).forEach((count, k) => {
-        const { edges } = items[k];
-        for (let j = 0; j < count; j++) blocks[edges[j] >> 1] |= edges[j] & 1 ? BLOCK_SOUTH : BLOCK_EAST;
-      });
+      for (const edge of queue.builtEdges(work)) blocks[edge >> 1] |= edge & 1 ? BLOCK_SOUTH : BLOCK_EAST;
     },
   };
   return queue;

@@ -8,7 +8,7 @@ const MIN_STAGE_WIDTH = 560;
 // The chart's distance from the stage's edges, as the map's padding.
 const INSET = 12;
 // A new point when the day has moved on by at least this much.
-const SAMPLE_DAYS = 0.5;
+export const SAMPLE_DAYS = 0.5;
 
 const SERIES = [
   { key: 'humans', label: 'Humans' },
@@ -54,9 +54,10 @@ export function chartBox(stageWidth) {
 /**
  * Draws the chart in `box`. `colours` holds the lines (humans, zombies, dead) and the panel
  * (panel, border, text, muted), plus `font`, the text face. `total` is the top of the scale, and
- * `latest` the current totals for the legend.
+ * `latest` the current totals for the legend. `baseline`, if given, is the run with no quarantine
+ * (sim/baseline.js); its humans are drawn faintly up to day `until`.
  */
-export function drawChart(ctx, box, history, { total, lastDay, colours, font, latest }) {
+export function drawChart(ctx, box, history, { total, lastDay, colours, font, latest, baseline, until }) {
   const pad = 10;
   const row = 15;
   ctx.save();
@@ -105,6 +106,30 @@ export function drawChart(ctx, box, history, { total, lastDay, colours, font, la
   const y = (people) => plot.y + plot.height - (people / total) * plot.height;
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
+  if (baseline?.days.length > 1) {
+    // The key, centred under the plot: a dashed swatch and its label.
+    const key = 'no quarantine';
+    const middle = plot.x + plot.width / 2;
+    const half = (ctx.measureText(key).width + 16) / 2;
+    ctx.textAlign = 'left';
+    ctx.fillText(key, middle - half + 16, plot.y + plot.height + 3);
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = colours.humans;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(middle - half, plot.y + plot.height + 9);
+    ctx.lineTo(middle - half + 12, plot.y + plot.height + 9);
+    ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < baseline.days.length && baseline.days[i] <= until + 1e-6; i++) {
+      const point = [x(baseline.days[i]), y(baseline.humans[i])];
+      if (i) ctx.lineTo(...point);
+      else ctx.moveTo(...point);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
   for (const { key } of SERIES) {
     const values = history[key];
     if (values.length < 2) continue;

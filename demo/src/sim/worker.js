@@ -14,11 +14,13 @@ const handlers = {
   init: ({ grid }) => engine.init(grid),
   colours: ({ colours }) => engine.setColours(colours),
   reset: (request) => (engine.reset(request), engine.frame()),
+  start: (request) => (engine.reset(request), engine.sample()),
   params: ({ params }) => engine.setParams(params),
   add: ({ item }) => engine.addItem(item),
   undo: () => engine.undo(),
   clear: () => engine.clear(),
   advance: ({ days }) => (engine.advance(days), engine.frame()),
+  trace: ({ days, every }) => engine.trace(days, every),
   repaint: () => engine.frame(),
   probe: ({ cell }) => engine.probe(cell),
 };
