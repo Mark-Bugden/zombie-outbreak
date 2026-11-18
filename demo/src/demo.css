@@ -16,12 +16,27 @@
   touch-action: manipulation;
 }
 
-/* The Advanced group: the model's parameters, folded away by default. */
+/* While "Draw cordon" is on, the map takes touches as strokes instead of scrolling the page. */
+[data-demo] .dk-stage-content.zo-drawing {
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Clicking a region seals it. */
+[data-demo] .dk-stage-content.zo-sealable {
+  cursor: pointer;
+}
+
+/* Groups of controls: the quarantine tools, and the model's parameters (Advanced), folded away by default. */
+[data-demo] .zo-group {
+  gap: var(--space-4);
+}
+
 [data-demo] .zo-group > summary {
   cursor: pointer;
   font-weight: var(--weight-strong);
 }
 
-[data-demo] .zo-group[open] {
-  gap: var(--space-4);
+[data-demo] details.zo-group:not([open]) {
+  gap: 0;
 }

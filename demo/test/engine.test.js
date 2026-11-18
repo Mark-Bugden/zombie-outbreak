@@ -47,7 +47,7 @@ test('darkens pale paper in the light theme', () => {
 });
 
 test('runs an outbreak, reports totals, and stops on the last day', () => {
-  const engine = createEngine({ lastDay: 2 });
+  const engine = createEngine({ lastDay: 2, detectionDay: 0, buildSpeed: 1 });
   engine.init({ width, height, labels, population });
   engine.setColours(DARK);
   engine.reset({ cell: 9, zombies: 10, params: PARAMS });
@@ -83,4 +83,33 @@ test('keeps one chart point per half day, and starts again for a new run', () =>
   assert.equal(history.days.length, 5);
   history.push(frame(0)); // a new run
   assert.deepEqual(history.days, [0]);
+});
+
+test('hides the outbreak until the detection day, and only then starts building', () => {
+  const engine = createEngine({ lastDay: 10, detectionDay: 2, buildSpeed: 5 });
+  engine.init({ width, height, labels, population });
+  engine.setColours(DARK);
+  engine.reset({ cell: 9, zombies: 10, params: { ...PARAMS, diffusion: 0, flee: 0 } });
+  const start = new Uint32Array(engine.frame().pixels);
+  // A wall down the middle, between columns 2 and 3: four east edges, 4 km.
+  const wall = Int32Array.from([0, 1, 2, 3].map((row) => (row * width + 2) * 2));
+  engine.addItem({ kind: 'cordon', edges: wall });
+
+  engine.advance(1);
+  const hidden = engine.frame();
+  assert.equal(hidden.detected, false);
+  assert.ok(hidden.totals.zombies > 10, 'the outbreak grows unseen');
+  assert.deepEqual(new Uint32Array(hidden.pixels), start, 'the map shows nothing amiss');
+  assert.equal(hidden.work, 0, 'the crew waits');
+
+  engine.advance(1.5);
+  const seen = engine.frame();
+  assert.equal(seen.detected, true);
+  assert.notDeepEqual(new Uint32Array(seen.pixels), start, 'the truth is shown');
+  assert.ok(Math.abs(seen.work - 2.5) < 1e-9, '5 km a day for half a day');
+
+  engine.advance(5);
+  assert.equal(engine.frame().work, 4, 'no work is banked once the queue is built');
+  engine.undo();
+  assert.equal(engine.frame().work, 0);
 });

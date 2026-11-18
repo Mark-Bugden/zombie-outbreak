@@ -103,8 +103,11 @@ export function createMap(grid) {
       painted = true;
     },
 
-    /** Draws the map to fit a stage of width × height CSS pixels; ctx is already scaled to CSS pixels. */
-    draw(ctx, stageWidth, stageHeight) {
+    /**
+     * Draws the map to fit a stage of width × height CSS pixels; ctx is already scaled to CSS pixels.
+     * `overlay(ctx, scale)`, if given, draws on top in cell units, where `scale` is CSS pixels per cell.
+     */
+    draw(ctx, stageWidth, stageHeight, overlay) {
       view = fit(width, height, stageWidth, stageHeight);
       ctx.fillStyle = colours.night;
       ctx.fillRect(0, 0, stageWidth, stageHeight);
@@ -123,7 +126,18 @@ export function createMap(grid) {
       ctx.strokeStyle = colours.nation;
       ctx.lineWidth = 1.25 / view.scale;
       ctx.stroke(paths.nation);
+      overlay?.(ctx, view.scale);
       ctx.restore();
+    },
+
+    /** CSS pixels per cell, as last drawn. */
+    get scale() {
+      return view.scale;
+    },
+
+    /** A point on the stage (CSS pixels) in cell units: [x, y] from the grid's north-west corner. */
+    toGrid(x, y) {
+      return [(x - view.x) / view.scale, (y - view.y) / view.scale];
     },
 
     /** The index of the cell under a point on the stage (CSS pixels), or -1 if it is off the grid. */

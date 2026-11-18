@@ -43,14 +43,14 @@ The reference implementation is `src/zombie_outbreak/model.py`, whose docstring 
 | | |
 | --- | --- |
 | Scenarios | Prague, Brno, Ostrava. |
-| Strains | Munz et al. (2009), Shamblers, Frenzied and Risers, set with the kit's `preset()`. An Advanced group exposes β, α, ζ, D_Z and χ as sliders. |
-| Visibility | Zombies are hidden on the map and the chart until the fixed detection day, then shown as they are. |
-| Cordons | Drawn freehand while a "Draw cordon" mode is on. While it's off, the map ignores touch, so phones can still scroll. Undo and Clear. |
-| Seal a region | Click a kraj, or choose it from a list. The list is the keyboard path. |
-| Building | Cordons and seals join one shared queue, built in the order they were drawn at a fixed speed in km per day. There is no budget: the queue's limited speed is the constraint. |
-| Baseline | A run with no quarantine is simulated alongside, so the demo can say how many people were saved. |
-| Speed | 1×/2×/4×, where 1× is about 2 days per second. Play, Pause and Reset come from the kit. |
-| End | When zombies are gone or on day 365, an end summary shows saved / sealed in / exported. |
+| Strains | Munz et al. (2009), Shamblers, Frenzied and Risers, chosen from a select. An Advanced group exposes β, α, ζ, D_Z and χ as sliders. |
+| Visibility | Until the fixed detection day, the outbreak is hidden on the map, the chart and the status line: the map shows the starting population. Then it is shown as it is. Visitors know the starting city from the scenario. |
+| Cordons | Drawn freehand while a "Draw cordon" mode is on. While it's off, the map ignores touch, so phones can still scroll. Undo and Clear. A stroke follows the grid lines between cells, so it is watertight. Proposed in 4a, not yet agreed: a stroke that ends near its start closes into a loop, and its ends join a nearby cordon or the national border. |
+| Seal a region | Click a kraj, or choose it from a list. The list is the keyboard path. A seal closes the kraj's borders with other kraje only, so zombies can still cross its stretch of national border (Mark, 2026-11-18). A sealed kraj can't be sealed twice; only Undo and Clear remove a seal. |
+| Building | Cordons and seals join one shared queue, built in the order they were drawn at a fixed speed in km per day, from the detection day on. One cell edge is 1 km. Proposed in 4a, not yet agreed: an edge another item already covers costs nothing. There is no budget: the queue's limited speed is the constraint. Plans can be drawn before detection. The run doesn't pause on detection (Mark, 2026-11-18). |
+| Baseline | A run with no quarantine is simulated alongside, so the demo can say how many people were saved. Changes to the Advanced sliders apply live to both: the baseline re-runs from day 0 with each change on the same day (Mark, 2026-11-18). |
+| Speed | 1×/2×/4×, where 1× is about 2 days per second. Play, Pause and Reset come from the kit. Reset, a new city or a new strain clears every cordon and seal (Mark, 2026-11-18). |
+| End | When zombies are gone or on day 365, an end summary shows saved / sealed in / exported. "Sealed in" counts the humans in each area cut off from the largest connected part of Czechia that holds zombies able to bite (≥ 1 per km²) at the moment it closes. Each km² counts once (Mark, 2026-11-18). |
 | Stage | The map fills the stage, with a small S/Z/R chart over empty space and the baseline drawn faintly. |
 | Copy | Plain and neutral. |
 
@@ -133,7 +133,7 @@ Split into three PRs.
   - The worker also paints each frame (`render/paint.js`), so only one pixel buffer crosses to the main thread. That buffer is handed back and reused.
   - The worker's logic is a plain module (`sim/engine.js`) that Node tests drive directly.
   - The main thread keeps the clock at 2 simulated days per second at 1×. Measured in Edge: 1.99 at 1× and 7.99 at 4×.
-  - Still for step 4: the baseline. It doesn't depend on anything the visitor does, so it can run ahead in the same worker, or once per scenario and strain.
+  - Still for step 4: the baseline. It doesn't depend on anything the visitor does, so it can run ahead in a second worker (4b).
 - [x] The outbreak on the map, the inset chart, scenarios and strains, the speed control, and the live status line with a hover readout.
   - **Rendering.** Mark chose brighter embers. People are amber light, sodium to white. Zombies are drawn as either embers (steady red where they hold the land) or the front (bright red rising to white where bites are happening now, from β S Z), whichever is stronger. The dead add nothing.
   - **Chart.** Drawn on the canvas rather than with Observable Plot, which would add a few hundred KB for three lines. It sits in the empty corner above Moravia and is hidden on stages narrower than 560 px.
@@ -155,11 +155,42 @@ Split into three PRs.
   - To show it on the site, Mark bumps the tag in the site's `data/projects.yaml`. The project is listed only once its write-up isn't a draft.
 
 ### 4. Quarantine: release `v1.0.0`, status `live`
-- [ ] Detection delay, freehand cordons, region sealing, and the shared build queue.
+Split into three PRs, like step 3.
+
+**4a. The quarantine tools (PR)**
+- [x] Detection delay, freehand cordons, region sealing, and the shared build queue.
+  - **Cordons** (`tools/cordon.js`). A stroke snaps to grid corners and follows the grid lines between them, one cell edge at a time, so it has no gaps. Tests check that random closed loops are watertight, and that zombies never cross a closed ring around Prague on the real map.
+  - **Seals.** A seal is the kraj's borders with other kraje, traced as paths so the crew builds it like a drawn line. Tests check that a seal encloses exactly its kraj.
+  - **The crew** (`sim/crew.js`). One queue, in the order drawn. The worker's engine counts the km built and blocks each edge as it is finished; the main thread keeps a copy of the queue to draw it: built cordon solid, planned dashed, and a dot where the crew is working.
+  - **Hidden, then truth.** Until the detection day, the worker paints the starting population with no zombies, the chart is empty, and the status line and hover readout show only where people live.
+  - Building every edge as it is finished costs about 1.1 ms per step while the crew works (3.8 ms against 2.7 ms, Node, on the full map).
+- [x] Calibrated with Mark (2026-11-18): **detection on day 7, and a crew building 40 km a day.** These are illustrative choices, made so that a quarantine can win but has to be quick and generous. Trials used the real engine, with the plan drawn on detection day: a ring centred on the starting city some margin beyond the visible outbreak (cells with at least one zombie), or a straight north–south line across the country 20 km beyond it. Survivors on day 365, out of 10.75M:
+
+  | Strain, city | Reach on day 7 | Narrowest ring that held | A tighter ring | Line | No quarantine |
+  | --- | --- | --- | --- | --- | --- |
+  | Munz, Prague | 30 km | +20 km: 396 km, closed day 17, 8.17M | +10 km: 0.02M | 5.33M | 0.02M |
+  | Munz, Brno | 23 km | +10 km: 268 km, 9.91M | | 6.79M | 0.02M |
+  | Munz, Ostrava | 25 km | +10 km: 142 km, 9.77M | | 9.25M | 0.02M |
+  | Frenzied, Prague | 44 km | +65 km: 654 km, closed day 24, 5.17M | +45 km: 0.06M | 5.08M | 0.02M |
+  | Frenzied, Brno | 36 km | +30 km: 373 km, 8.96M | +20 km: 0.02M | 6.54M | 0.02M |
+  | Frenzied, Ostrava | 42 km | +10 km: 156 km, 9.56M | | 8.91M | 0.02M |
+  | Shamblers, Prague / Brno / Ostrava | 24 / 18 / 19 km | +10 km: 8.54 / 10.01 / 9.90M | | 5.51 / 6.91 / 9.35M | 0.06 / 0.54 / 2.58M |
+  | Risers, Prague / Brno / Ostrava | 24 / 17 / 19 km | +10 km: 8.54 / 10.03 / 9.92M | | 5.49 / 6.92 / 9.35M | 0.05 / 0.44 / 2.67M |
+
+  - Every ring either held completely or failed completely: a failed ring left 0.02–0.06M alive, as with no quarantine. In the failures drawn for the montage, the zombies escaped through the stretch built last.
+  - A city falls within about 3 days (1.43M people are bitten by day 3 under Munz from Prague), and by detection zombies are 17–44 km out. Sealing only the starting kraj never holds around Prague, whose kraj is about 13 km in radius. It holds around Ostrava against every strain but Frenzied (Moravian-Silesian, 232 km, closed on day 13: with Munz, 9.57M survive and 400k zombies are exported), and around Brno only against Risers (South Moravian, 418 km, closed on day 18). Once a city has fallen, fronts move about 1.5 km a day (Munz) and 3.3 km a day (Frenzied), from Prague between days 14 and 42. A ring costs about 8 km per km of radius, so it can only win if the crew outbuilds the front by about that factor.
+  - Ostrava is easy for every strain: half of any ring around it lies outside Czechia, where it costs nothing, and zombies that cross the border leave the model.
+  - Other settings tried, as the margin a ring around Prague needed: at 30 km a day, Munz needs +30 km and no ring holds Frenzied, so a line is the best plan there; at 60 km a day, Munz needs +10–20 km and Frenzied +30 km. Detecting on day 5, 10 or 14 instead of 7 needed the same margins, except that Frenzied at 60 km a day needed +45 km from day 10 on.
+  - These trials are a best case: the simulated visitor draws a perfect circle on the day of detection. A real one loses 2 days for every second they take at 1×, unless they plan before detection.
+
+**4b. Saved, sealed in, exported (PR)**
 - [ ] Baseline run, saved / sealed in / exported, and the end summary.
+
+**4c. Stills, write-up and release (PR, then release)**
 - [ ] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon.
 - [ ] The draft write-up in `docs/writeup.md`.
 - No model card. This demo doesn't need one (Mark, 2026-11-18); the data and the paper are credited in the manifest's `about`.
+- [ ] Manifest: status `live`, and `built`. Release `v1.0.0`.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
 ### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)
@@ -168,6 +199,5 @@ Split into three PRs.
 
 ## Open questions
 
-- **"Sealed in".** How exactly to count it, for example the humans inside closed areas that contain zombies at the moment of sealing. Decide while building step 4.
 - **Munz parameters.** The paper uses counts in a well-mixed population of 500, so converting them to density units is a judgement call. The write-up should say so.
 - **Calibration.** The strain parameters, the detection day and the build speed are set by hand so the game is balanced. The demo copy and the write-up should call them illustrative choices, not estimates.
