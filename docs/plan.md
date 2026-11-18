@@ -196,7 +196,7 @@ Split into three PRs, like step 3.
 - [x] The draft write-up in `docs/writeup.md`. Its figures come from the trials above; the two papers it cites were checked (Munz et al. 2009 in *Infectious Disease Modelling Research Progress*, pp. 133–150; Brunet and Derrida 1997, *Phys. Rev. E* 56, 2597–2604).
 - No model card. This demo doesn't need one (Mark, 2026-11-18); the data and the paper are credited in the manifest's `about`.
 - [x] Manifest: status `live`, and `built`.
-- [ ] Release `v1.0.0`.
+- [x] Released `v1.0.0` on 2026-11-18 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v1.0.0)), after checking the downloaded zip with the validator.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
 ### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)
