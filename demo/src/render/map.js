@@ -2,8 +2,8 @@
 // Cells are painted into an offscreen image at one pixel per cell, and the image is drawn
 // scaled to the stage. The borders are vector paths along cell edges, stroked on top.
 
-// Labels from 21 up are neighbouring countries; below that, Czech regions (see grid.py).
-export const NEIGHBOUR_BASE = 21;
+import { NEIGHBOUR_BASE } from '../grid.js';
+
 const RAMP_SIZE = 256;
 // Space around the map inside the stage, in CSS pixels.
 const PADDING = 12;

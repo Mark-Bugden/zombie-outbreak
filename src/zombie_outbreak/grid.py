@@ -27,6 +27,9 @@ import shapely
 from scipy.ndimage import distance_transform_edt
 from shapely.geometry import shape
 
+# Labels: 1–14 are the Czech regions in code order, and neighbours start at NEIGHBOUR_BASE.
+from .model import NEIGHBOUR_BASE
+
 ROOT = Path(__file__).resolve().parents[2]
 WORLDPOP = ROOT / "Data" / "PopDensity" / "Czechia" / "2020" / "cze_pd_2020_1km_UNadj.tif"
 BOUNDARIES = ROOT / "Data" / "Boundaries" / "NaturalEarth-v5.1.2"
@@ -37,8 +40,6 @@ CELL = 1000  # metres
 # Cells of neighbouring country kept around Czechia's bounding box, so every Czech cell has four
 # neighbours inside the grid and the solver never has to check the grid's edges.
 MARGIN = 2
-# Labels: 1–14 are the Czech regions in code order, and neighbours start at NEIGHBOUR_BASE.
-NEIGHBOUR_BASE = 21
 # Scenario starting points: the main square of each city, as latitude and longitude.
 CITIES = (
     ("Prague", 50.0875, 14.4213),

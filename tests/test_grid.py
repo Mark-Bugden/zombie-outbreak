@@ -1,27 +1,10 @@
-"""Checks the committed population grid, demo/public/data/czechia.json, that zombie_outbreak.grid writes."""
+"""Checks the committed population grid, demo/public/data/czechia.json, that zombie_outbreak.grid writes.
 
-import base64
-import json
-import zlib
-from pathlib import Path
+The `grid` fixture, which decodes it, is in conftest.py.
+"""
 
 import numpy as np
 import pytest
-
-GRID = Path(__file__).resolve().parents[1] / "demo" / "public" / "data" / "czechia.json"
-DTYPES = {"uint8": "<u1", "uint16": "<u2"}
-
-
-@pytest.fixture(scope="module")
-def grid():
-    data = json.loads(GRID.read_text(encoding="utf-8"))
-    shape = (data["height"], data["width"])
-
-    def decode(field):
-        raw = zlib.decompress(base64.b64decode(field["data"]))
-        return np.frombuffer(raw, dtype=DTYPES[field["dtype"]]).reshape(shape)
-
-    return data, decode(data["population"]), decode(data["labels"])
 
 
 def test_total_matches_the_data_and_czechia(grid):

@@ -11,8 +11,8 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 | Path | What it is |
 | --- | --- |
 | [`demo/`](demo/) | The interactive demo for [mark-bugden.github.io](https://mark-bugden.github.io/), built with [demo-kit](https://github.com/Mark-Bugden/demo-kit). Its README explains how to run and build it. |
-| [`src/zombie_outbreak/`](src/zombie_outbreak/) | Python: the data prep that builds the demo's population grid. |
-| [`tests/`](tests/) | Python tests. |
+| [`src/zombie_outbreak/`](src/zombie_outbreak/) | Python: the data prep that builds the demo's population grid, and `model.py`, the reference implementation of the SZR model that the demo's solver is a port of. |
+| [`tests/`](tests/) | Python tests, and `fixtures/szr.json`: reference runs that the demo's solver must reproduce. |
 | [`Data/`](Data/) | Source data: WorldPop population density and Natural Earth boundaries. Its README lists sources and licences. |
 | [`docs/`](docs/) | The plan, and later the write-up. |
 | [`legacy/`](legacy/) | The original 2023 notebooks, kept for reference. |
@@ -34,10 +34,15 @@ The demo's population grid, `demo/public/data/czechia.json`, is committed, so th
 uv sync
 uv run python -m zombie_outbreak.boundaries   # optional: re-fetch the Natural Earth boundaries
 uv run python -m zombie_outbreak.grid         # writes demo/public/data/czechia.json
+uv run python -m zombie_outbreak.fixtures     # writes tests/fixtures/szr.json, after any change to model.py
 uv run pytest
 ```
 
 The grid is Czechia on the equal-area ETRS89-LAEA grid (EPSG:3035) at 1 km. Each cell holds its population, and a label: its region, or for cells outside Czechia, the neighbouring country.
+
+## The model
+
+`src/zombie_outbreak/model.py` documents the model and is its reference implementation. `demo/src/sim/szr.js` is a port of it, written to do the same operations in the same order, and its tests replay `tests/fixtures/szr.json` to within 1e-14. If you change one, change the other, regenerate the fixtures, and run both test suites.
 
 ## Data
 
