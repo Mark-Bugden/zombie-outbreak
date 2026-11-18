@@ -5,6 +5,9 @@
 
 import { loadJSON } from '@mark-bugden/demo-kit/loader';
 
+/** Labels below this are Czech regions (1–14), and from it up neighbouring countries. */
+export const NEIGHBOUR_BASE = 21;
+
 const ARRAYS = { uint8: Uint8Array, uint16: Uint16Array };
 
 async function decodeField({ dtype, data }, cells) {

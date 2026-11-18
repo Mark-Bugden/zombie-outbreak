@@ -6,8 +6,8 @@ import { mount } from '@mark-bugden/demo-kit';
 import '@mark-bugden/demo-kit/tokens.scoped.css';
 import '@mark-bugden/demo-kit/frame.css';
 import './demo.css';
-import { loadGrid } from './grid.js';
-import { NEIGHBOUR_BASE, createMap, readColours } from './render/map.js';
+import { NEIGHBOUR_BASE, loadGrid } from './grid.js';
+import { createMap, readColours } from './render/map.js';
 
 const number = new Intl.NumberFormat('en-GB');
 
