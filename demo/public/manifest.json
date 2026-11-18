@@ -2,12 +2,13 @@
   "slug": "zombie-outbreak",
   "title": "Quantifying the Quarantine",
   "tagline": "Simulating a zombie outbreak across a real population map.",
-  "summary": "A simulation of a zombie outbreak spreading across a country. It runs an SIR model in every cell of a population density map, about one square kilometre per cell, and lets people move between neighbouring cells, so the outbreak spreads through the population like an infectious disease.",
-  "tags": ["mathematical modelling", "data visualisation", "PDEs"],
-  "status": "stub",
+  "summary": "A zombie outbreak spreading across Czechia, simulated on a 1 km population map. Every square kilometre runs Munz et al.'s humans–zombies–removed model, with zombies wandering, humans fleeing and the dead rising, as a front of bites sweeps out from Prague, Brno or Ostrava. Tools for drawing quarantines are on the way.",
+  "tags": ["mathematical modelling", "PDEs", "epidemiology", "data visualisation"],
+  "status": "in-progress",
   "repo": "https://github.com/Mark-Bugden/zombie-outbreak",
   "kitVersion": "0.2.0",
-  "built": "2026-11-17",
+  "built": "2026-11-18",
   "demo": { "entry": "demo.js", "height": 560, "needsWebGL": false },
-  "writeup": "/projects/zombie-outbreak/"
+  "writeup": "/projects/zombie-outbreak/",
+  "about": "**What you're seeing.** Each pixel is one square kilometre of Czechia. Amber light shows where people live. The bright red front is where zombies are biting now, and dark red is land the zombies hold. As people are lost, the lights go out. Point at the map to read a square kilometre.\n\n**The model** is the humans–zombies–removed model of Munz et al. (2009), [\"When zombies attack!\"](https://loe.org/images/content/091023/Zombie%20Publication.pdf), run in every square kilometre:\n\n- zombies bite humans, who become zombies (β); humans destroy zombies (α); and the destroyed rise again (ζ)\n- zombies wander into neighbouring squares (D), and humans flee from squares where zombies are a larger share (χ)\n- in a square with fewer than one zombie, zombies cannot bite, so a thin scattering of them cannot start an outbreak on its own\n- zombies that cross the border are counted, and leave the model; humans stay in Czechia.\n\n**The strains** are illustrative settings, not estimates. *Munz et al. (2009)* uses the paper's rates, reading its population of 500 as 500 people per km². *Shamblers* are slow, *Frenzied* are fast, and *Risers* lose most fights but rise again within days. Change any rate under *Advanced*.\n\n**Still to come:** cordons, sealed regions, and how many people a quarantine saves.\n\n**Data.** Population: [WorldPop](https://dx.doi.org/10.5258/SOTON/WP00675), Czech Republic 2020, UN-adjusted, regridded to an equal-area 1 km grid ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). Boundaries: [Natural Earth](https://www.naturalearthdata.com/) (public domain)."
 }

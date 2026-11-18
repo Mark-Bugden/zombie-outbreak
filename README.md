@@ -4,7 +4,7 @@ A simulation of a zombie outbreak across a real population map of Czechia, with 
 
 The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), run as a reaction-diffusion system on a 1 km population grid.
 
-**Status:** being rebuilt. The demo bundle currently released for the site is a stub. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md).
+**Status:** in progress. The demo runs the outbreak: pick a city, a strain and a speed, and watch the lights go out. The quarantine tools come next. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md).
 
 ## Repository layout
 
@@ -15,6 +15,7 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 | [`tests/`](tests/) | Python tests, and `fixtures/szr.json`: reference runs that the demo's solver must reproduce. |
 | [`Data/`](Data/) | Source data: WorldPop population density and Natural Earth boundaries. Its README lists sources and licences. |
 | [`docs/`](docs/) | The plan, and later the write-up. |
+| [`scripts/`](scripts/) | `stills.py`, which renders the demo's still images from the built demo in a real browser. |
 | [`legacy/`](legacy/) | The original 2023 notebooks, kept for reference. |
 
 ## Running the demo
@@ -25,6 +26,8 @@ npm install
 npm run dev
 npm test          # unit tests
 ```
+
+To re-render the still images (`static.webp`, `thumb.webp`, `og.jpg`) after a visual change, build the demo, then run `uv run --with playwright --with pillow python scripts/stills.py` from the repo root. It uses Microsoft Edge by default; pass another Playwright channel, such as `chrome`, as an argument. Rebuild afterwards, so `dist/` picks the images up.
 
 ## Rebuilding the data
 

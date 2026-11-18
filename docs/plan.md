@@ -30,7 +30,7 @@ The reference implementation is `src/zombie_outbreak/model.py`, whose docstring 
   - Cells under ε = 0.001 zombies are still cleared, to keep the arrays clean. They are counted, so the books balance.
 - **Cordons.** A cordon blocks movement across the cell edges it covers, for every compartment.
 - **National border.** Zombies that cross the border leave the model. They are counted as exported to Germany, Poland, Austria or Slovakia, depending on which neighbour's border they cross. Humans don't cross the border, so fleeing stays inside Czechia.
-- **Numerics.** Each step is split into encounters, wandering, fleeing and clean-up, in that order. Encounters use an exponential update (S·(1 − e^(−βZ dt)) and so on), which matches the equations to first order and keeps every compartment non-negative at any dt. Stability needs D·dt ≤ 0.25 km² and 4χ·dt ≤ 1.
+- **Numerics.** Each step is split into encounters, wandering, fleeing and clean-up, in that order. Encounters use an exponential update (S·(1 − e^(−βZ dt)) and so on), which matches the equations to first order and keeps every compartment non-negative at any dt. The step needs D·dt ≤ 0.2 km² and 4χ·dt ≤ 1. The textbook stability limit for diffusion is 0.25, but at it a checkerboard pattern flips sign every step and never decays. That showed up as hatching in the first strain trials.
 
 ## The map
 
@@ -129,15 +129,33 @@ Split into three PRs.
   - It only visits Czech cells and the rim just across the border, and skips work that would only add zeros. Both shortcuts are exact.
 
 **3c. Running it (PR, then release)**
-- [ ] Run the solver in a worker (`?worker&inline`), with the UI's protocol. Moved here from 3b, because the messages depend on what the UI needs.
-  - The no-quarantine baseline doesn't depend on anything the visitor does, so it can run ahead, or once per scenario and strain.
-- [ ] Zombies and the dead on the map, the inset chart, scenarios and strains, the speed control, and the live status line.
-- [ ] Rewrite the manifest: summary, tags, and `about`. Update `built`. Replace `static.webp` with the opening state.
+- [x] Run the solver in a worker (`demo/src/sim/worker.js`, inlined into `demo.js` with `?worker&inline`).
+  - The worker also paints each frame (`render/paint.js`), so only one pixel buffer crosses to the main thread. That buffer is handed back and reused.
+  - The worker's logic is a plain module (`sim/engine.js`) that Node tests drive directly.
+  - The main thread keeps the clock at 2 simulated days per second at 1×. Measured in Edge: 1.99 at 1× and 7.99 at 4×.
+  - Still for step 4: the baseline. It doesn't depend on anything the visitor does, so it can run ahead in the same worker, or once per scenario and strain.
+- [x] The outbreak on the map, the inset chart, scenarios and strains, the speed control, and the live status line with a hover readout.
+  - **Rendering.** Mark chose brighter embers. People are amber light, sodium to white. Zombies are drawn as either embers (steady red where they hold the land) or the front (bright red rising to white where bites are happening now, from β S Z), whichever is stronger. The dead add nothing.
+  - **Chart.** Drawn on the canvas rather than with Observable Plot, which would add a few hundred KB for three lines. It sits in the empty corner above Moravia and is hidden on stages narrower than 560 px.
+  - **Strains,** tuned on the full map with Mark (2026-11-18). These are illustrative settings, not estimates. Flee χ = 0.5 in all of them, and dt = 0.1 day.
+
+    | Strain | β | α | ζ | D | From Prague: Brno / Ostrava reached |
+    | --- | --- | --- | --- | --- | --- |
+    | Munz et al. (2009) | 0.0095 | 0.005 | 0.0001 | 1.0 | day 137 / 196 |
+    | Shamblers | 0.005 | 0.003 | 0.001 | 0.8 | day 232 / 328 |
+    | Frenzied | 0.015 | 0.003 | 0.001 | 2.0 | day 60 / 86 |
+    | Risers | 0.007 | 0.010 | 0.3 | 1.0 | day 236 / 338 |
+
+    - The Munz values are verified against the paper: page 5 ("Values used in Figure 3 were α = 0.005, β = 0.0095, ζ = 0.0001 and δ = 0.0001") and its code (`N = 500`). We read N = 500 as 500 people per km² and drop δ, since there are no natural deaths over a year.
+    - Because transmission is mass action, cities fall within days (Prague's core is about 5,000 per km²), and the front then slows to 1–2 km a day in the countryside.
+    - The first trial set Frenzied's D to 2.5 (D·dt = 0.25), which showed checkerboard hatching. That's why the step now requires D·dt ≤ 0.2.
+- [x] Rewrite the manifest: status `in-progress`, the summary, tags and `about`, with the WorldPop credit its CC BY licence requires, and `built`.
+- [x] Render the stills from the demo (`scripts/stills.py`): `static.webp` on day 0, and thumb/og with Munz from Prague on day 120. Step 4 re-runs it with a cordon.
 
 ### 4. Quarantine: release `v1.0.0`, status `live`
 - [ ] Detection delay, freehand cordons, region sealing, and the shared build queue.
 - [ ] Baseline run, saved / sealed in / exported, and the end summary.
-- [ ] Render the stills from the simulation: `static.webp` at day 0, and thumb/og mid-outbreak with a cordon.
+- [ ] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon.
 - [ ] Model card (sources: WorldPop, Natural Earth, Munz et al. 2009) and the draft write-up in `docs/writeup.md`.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
