@@ -151,12 +151,15 @@ Split into three PRs.
     - The first trial set Frenzied's D to 2.5 (D·dt = 0.25), which showed checkerboard hatching. That's why the step now requires D·dt ≤ 0.2.
 - [x] Rewrite the manifest: status `in-progress`, the summary, tags and `about`, with the WorldPop credit its CC BY licence requires, and `built`.
 - [x] Render the stills from the demo (`scripts/stills.py`): `static.webp` on day 0, and thumb/og with Munz from Prague on day 120. Step 4 re-runs it with a cordon.
+- [x] Released `v0.2.0` on 2026-11-18 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v0.2.0)), after checking the downloaded zip with the validator.
+  - To show it on the site, Mark bumps the tag in the site's `data/projects.yaml`. The project is listed only once its write-up isn't a draft.
 
 ### 4. Quarantine: release `v1.0.0`, status `live`
 - [ ] Detection delay, freehand cordons, region sealing, and the shared build queue.
 - [ ] Baseline run, saved / sealed in / exported, and the end summary.
 - [ ] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon.
-- [ ] Model card (sources: WorldPop, Natural Earth, Munz et al. 2009) and the draft write-up in `docs/writeup.md`.
+- [ ] The draft write-up in `docs/writeup.md`.
+- No model card. This demo doesn't need one (Mark, 2026-11-18); the data and the paper are credited in the manifest's `about`.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
 ### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)
