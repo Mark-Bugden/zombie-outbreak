@@ -91,6 +91,10 @@ def test_a_cordon_stops_zombies_and_humans():
 def test_unstable_steps_are_refused():
     with pytest.raises(ValueError, match="diffusion"):
         Params(beta=0, alpha=0, zeta=0, diffusion=3.0, flee=0, dt=0.1).check()
+    # At D dt = 0.25 a checkerboard pattern never decays, so the limit is 0.2.
+    with pytest.raises(ValueError, match="diffusion"):
+        Params(beta=0, alpha=0, zeta=0, diffusion=2.5, flee=0, dt=0.1).check()
+    Params(beta=0, alpha=0, zeta=0, diffusion=2.0, flee=0, dt=0.1).check()
     with pytest.raises(ValueError, match="flee"):
         Params(beta=0, alpha=0, zeta=0, diffusion=0, flee=3.0, dt=0.1).check()
 

@@ -15,6 +15,8 @@ import { NEIGHBOUR_BASE } from '../grid.js';
 // Bits of `blocks`, per cell: its east edge, and its south edge, is blocked by a cordon.
 export const BLOCK_EAST = 1;
 export const BLOCK_SOUTH = 2;
+// The largest D dt / dx² a step allows, as in model.py.
+export const MAX_DIFFUSION_STEP = 0.2;
 
 // Bits of the edge table, per cell: zombies, and humans, can cross its east or south edge.
 const ZOMBIE_EAST = 1;
@@ -31,7 +33,8 @@ export function checkParams(params) {
     if (!(params[name] >= 0)) throw new RangeError(`szr: ${name} must be non-negative, got ${params[name]}`);
   }
   if (!(params.dt > 0)) throw new RangeError(`szr: dt must be positive, got ${params.dt}`);
-  if (params.diffusion * params.dt > 0.25) throw new RangeError(`szr: diffusion × dt must be at most 0.25 for a stable step, got ${params.diffusion * params.dt}`);
+  // 0.25 is the stability limit, but at it a checkerboard pattern never decays (see model.py).
+  if (params.diffusion * params.dt > MAX_DIFFUSION_STEP) throw new RangeError(`szr: diffusion × dt must be at most ${MAX_DIFFUSION_STEP} for a smooth, stable step, got ${params.diffusion * params.dt}`);
   if (4 * params.flee * params.dt > 1) throw new RangeError(`szr: 4 × flee × dt must be at most 1 for a stable step, got ${4 * params.flee * params.dt}`);
 }
 
