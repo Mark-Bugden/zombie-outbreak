@@ -192,10 +192,11 @@ Split into three PRs, like step 3.
   - **The end summary** is a card under the map with the four numbers. "Saved" says "Comparing…" until the baseline has finished.
 
 **4c. Stills, write-up and release (PR, then release)**
-- [ ] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon.
-- [ ] The draft write-up in `docs/writeup.md`.
+- [x] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon: Munz from Prague, with a 55 km ring drawn before detection, on day 30, as the front reaches the finished ring.
+- [x] The draft write-up in `docs/writeup.md`. Its figures come from the trials above; the two papers it cites were checked (Munz et al. 2009 in *Infectious Disease Modelling Research Progress*, pp. 133–150; Brunet and Derrida 1997, *Phys. Rev. E* 56, 2597–2604).
 - No model card. This demo doesn't need one (Mark, 2026-11-18); the data and the paper are credited in the manifest's `about`.
-- [ ] Manifest: status `live`, and `built`. Release `v1.0.0`.
+- [x] Manifest: status `live`, and `built`.
+- [ ] Release `v1.0.0`.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
 ### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)

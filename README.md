@@ -4,7 +4,7 @@ A simulation of a zombie outbreak across a real population map of Czechia, with 
 
 The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), run as a reaction-diffusion system on a 1 km population grid.
 
-**Status:** in progress. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw cordons and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The stills and the write-up come next. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md).
+**Status:** live from `v1.0.0`. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw cordons and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md), and the draft write-up is in [docs/writeup.md](docs/writeup.md).
 
 ## Repository layout
 
