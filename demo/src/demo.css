@@ -15,3 +15,13 @@
 [data-demo] .dk-stage-content {
   touch-action: manipulation;
 }
+
+/* The Advanced group: the model's parameters, folded away by default. */
+[data-demo] .zo-group > summary {
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+}
+
+[data-demo] .zo-group[open] {
+  gap: var(--space-4);
+}

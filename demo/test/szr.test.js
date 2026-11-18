@@ -57,6 +57,7 @@ test('refuses unstable or negative parameters', () => {
   const ok = { beta: 0, alpha: 0, zeta: 0, diffusion: 2, flee: 2, threshold: 1, epsilon: 1e-3, dt: 0.1 };
   assert.doesNotThrow(() => checkParams(ok));
   assert.throws(() => checkParams({ ...ok, diffusion: 3 }), /diffusion/);
+  assert.throws(() => checkParams({ ...ok, diffusion: 2.5 }), /diffusion/); // the checkerboard never decays at 0.25
   assert.throws(() => checkParams({ ...ok, flee: 3 }), /flee/);
   assert.throws(() => checkParams({ ...ok, beta: -1 }), /beta/);
 });

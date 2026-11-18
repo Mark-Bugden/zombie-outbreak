@@ -40,6 +40,8 @@ NEIGHBOUR_BASE = 21
 # Bits of `blocks`, per cell: its east edge, and its south edge, is blocked by a cordon.
 BLOCK_EAST = 1
 BLOCK_SOUTH = 2
+# The largest D dt / dx² a step allows (see Params.check).
+MAX_DIFFUSION_STEP = 0.2
 
 
 @dataclass(frozen=True)
@@ -60,8 +62,10 @@ class Params:
                 raise ValueError(f"{name} must be non-negative, got {getattr(self, name)}")
         if not self.dt > 0:
             raise ValueError(f"dt must be positive, got {self.dt}")
-        if self.diffusion * self.dt > 0.25:
-            raise ValueError(f"diffusion × dt must be at most 0.25 for a stable step, got {self.diffusion * self.dt}")
+        # 0.25 is the stability limit of the explicit 5-point step, but at it a checkerboard pattern
+        # (amplification 1 − 8 D dt = −1) flips sign every step and never decays. At 0.2 it dies away.
+        if self.diffusion * self.dt > MAX_DIFFUSION_STEP:
+            raise ValueError(f"diffusion × dt must be at most {MAX_DIFFUSION_STEP} for a smooth, stable step, got {self.diffusion * self.dt}")
         if 4 * self.flee * self.dt > 1:
             raise ValueError(f"4 × flee × dt must be at most 1 for a stable step, got {4 * self.flee * self.dt}")
 

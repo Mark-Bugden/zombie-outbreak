@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { borderSegments, fit, pack, parseHex, ramp } from '../src/render/map.js';
+import { pack, parseHex, ramp, rampIndex } from '../src/render/colour.js';
+import { borderSegments, fit } from '../src/render/map.js';
 
 test('parses hex colours', () => {
   assert.deepEqual(parseHex('#f6be55'), [246, 190, 85]);
@@ -16,11 +17,13 @@ test('packs pixels as little-endian RGBA', () => {
 
 test('ramps from the first stop to the last through the middle ones', () => {
   const table = ramp([[0, '#000000'], [0.5, '#ff0000'], [1, '#ffffff']]);
-  const rgb = (i) => [...new Uint8ClampedArray(new Uint32Array([table[i]]).buffer)].slice(0, 3);
+  const rgb = (i) => [...table.slice(i * 3, i * 3 + 3)];
   assert.deepEqual(rgb(0), [0, 0, 0]);
   assert.deepEqual(rgb(255), [255, 255, 255]);
   // t = 128/255 is just past the middle stop: 255 × (128/255 − 0.5) / 0.5 = 1.
   assert.deepEqual(rgb(128), [255, 1, 1]);
+  assert.equal(rampIndex(-1), 0);
+  assert.equal(rampIndex(2), 255);
 });
 
 test('traces region and national borders along cell edges, merging runs', () => {

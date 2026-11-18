@@ -1,55 +1,23 @@
-// The map: the population grid drawn to fit the stage, with region and national borders.
-// Cells are painted into an offscreen image at one pixel per cell, and the image is drawn
-// scaled to the stage. The borders are vector paths along cell edges, stroked on top.
+// The map: an image of the grid at one pixel per cell, painted by the worker (see paint.js), drawn
+// scaled to fit the stage, with region and national borders stroked on top as vector paths along
+// cell edges.
 
 import { NEIGHBOUR_BASE } from '../grid.js';
 
-const RAMP_SIZE = 256;
 // Space around the map inside the stage, in CSS pixels.
 const PADDING = 12;
 
-/** The map colours for the current theme, from the kit's tokens and the demo's --zo-people (demo.css). */
+/** The map's colours for the current theme, from the kit's tokens and the demo's --zo-people (demo.css). */
 export function readColours(token) {
   return {
     night: token('--color-bg'),
     land: token('--color-surface'),
     people: token('--zo-people'),
     peak: token('--color-text'),
+    zombie: token('--color-halpha'),
     region: token('--color-border'),
     nation: token('--color-curve'),
   };
-}
-
-/** Parses a CSS hex colour, #rgb or #rrggbb, into [r, g, b]. */
-export function parseHex(color) {
-  const hex = color.trim().replace(/^#/, '');
-  const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
-  if (!/^[0-9a-f]{6}$/i.test(full)) throw new Error(`map: expected a hex colour, got "${color}"`);
-  return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
-}
-
-/** Packs [r, g, b] as an opaque pixel for a Uint32Array view of ImageData (little-endian). */
-export function pack([r, g, b]) {
-  return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
-}
-
-/**
- * A lookup table of RAMP_SIZE packed colours running through the stops, [[t, '#hex'], ...] with
- * t from 0 to 1 in increasing order, interpolated linearly in RGB.
- */
-export function ramp(stops) {
-  const parsed = stops.map(([t, color]) => [t, parseHex(color)]);
-  const table = new Uint32Array(RAMP_SIZE);
-  for (let i = 0; i < RAMP_SIZE; i++) {
-    const t = i / (RAMP_SIZE - 1);
-    let k = 1;
-    while (k < parsed.length - 1 && parsed[k][0] < t) k++;
-    const [t0, c0] = parsed[k - 1];
-    const [t1, c1] = parsed[k];
-    const f = t1 > t0 ? Math.min(1, Math.max(0, (t - t0) / (t1 - t0))) : 1;
-    table[i] = pack(c0.map((v, j) => Math.round(v + (c1[j] - v) * f)));
-  }
-  return table;
 }
 
 /**
@@ -110,45 +78,29 @@ function toPath(segments) {
 }
 
 /**
- * The map for a decoded grid (see grid.js). Call setColours() with readColours() whenever the
- * theme changes, paint() whenever the population changes, and draw() on every render.
+ * The map for a decoded grid (see grid.js). Call setImage() with each frame's pixels, setColours()
+ * with readColours() when the theme changes, and draw() on every render.
  */
 export function createMap(grid) {
   const { width, height, labels } = grid;
-  const image = new ImageData(width, height);
-  const pixels = new Uint32Array(image.data.buffer);
   const canvas = document.createElement('canvas');
   Object.assign(canvas, { width, height });
   const context = canvas.getContext('2d');
   const segments = borderSegments(labels, width, height);
   const paths = { region: toPath(segments.region), nation: toPath(segments.nation) };
-  // Brightness is log-scaled against the most crowded cell at the start, so the map darkens
-  // as people are lost instead of rescaling.
-  const logPeak = Math.log1p(grid.population.reduce((max, people) => Math.max(max, people), 0));
   let colours = null;
-  let shades = null;
-  let night = 0;
+  let painted = false;
   let view = { scale: 1, x: 0, y: 0 };
 
   return {
     setColours(next) {
       colours = next;
-      // Only the densest city cores reach the peak colour.
-      shades = ramp([[0, next.land], [0.9, next.people], [1, next.peak]]);
-      night = pack(parseHex(next.night));
     },
 
-    /** Paints each cell from `people` (one value per cell). */
-    paint(people) {
-      for (let i = 0; i < pixels.length; i++) {
-        if (labels[i] >= NEIGHBOUR_BASE) {
-          pixels[i] = night;
-        } else {
-          const t = Math.log1p(people[i]) / logPeak;
-          pixels[i] = shades[Math.min(RAMP_SIZE - 1, Math.round(t * (RAMP_SIZE - 1)))];
-        }
-      }
-      context.putImageData(image, 0, 0);
+    /** Takes a frame's pixels: an ArrayBuffer of width × height RGBA pixels. */
+    setImage(buffer) {
+      context.putImageData(new ImageData(new Uint8ClampedArray(buffer), width, height), 0, 0);
+      painted = true;
     },
 
     /** Draws the map to fit a stage of width × height CSS pixels; ctx is already scaled to CSS pixels. */
@@ -156,6 +108,7 @@ export function createMap(grid) {
       view = fit(width, height, stageWidth, stageHeight);
       ctx.fillStyle = colours.night;
       ctx.fillRect(0, 0, stageWidth, stageHeight);
+      if (!painted) return;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(canvas, view.x, view.y, width * view.scale, height * view.scale);
