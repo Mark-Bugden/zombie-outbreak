@@ -14,7 +14,7 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 | [`src/zombie_outbreak/`](src/zombie_outbreak/) | Python: the data prep that builds the demo's population grid, and `model.py`, the reference implementation of the SZR model that the demo's solver is a port of. |
 | [`tests/`](tests/) | Python tests, and `fixtures/szr.json`: reference runs that the demo's solver must reproduce. |
 | [`Data/`](Data/) | Source data: WorldPop population density and Natural Earth boundaries. Its README lists sources and licences. |
-| [`docs/`](docs/) | The plan, and later the write-up. |
+| [`docs/`](docs/) | The plan, and the draft write-up for the site. |
 | [`scripts/`](scripts/) | `stills.py`, which renders the demo's still images from the built demo in a real browser. |
 | [`legacy/`](legacy/) | The original 2023 notebooks, kept for reference. |
 
