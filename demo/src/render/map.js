@@ -8,15 +8,15 @@ const RAMP_SIZE = 256;
 // Space around the map inside the stage, in CSS pixels.
 const PADDING = 12;
 
-/** The map colours, read from the demo's --zo-* tokens (demo.css) for the current theme. */
+/** The map colours for the current theme, from the kit's tokens and the demo's --zo-people (demo.css). */
 export function readColours(token) {
   return {
-    night: token('--zo-night'),
-    land: token('--zo-land'),
+    night: token('--color-bg'),
+    land: token('--color-surface'),
     people: token('--zo-people'),
-    peak: token('--zo-people-peak'),
-    region: token('--zo-border-region'),
-    nation: token('--zo-border-nation'),
+    peak: token('--color-text'),
+    region: token('--color-border'),
+    nation: token('--color-curve'),
   };
 }
 
