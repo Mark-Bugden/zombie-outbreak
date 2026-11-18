@@ -16,17 +16,21 @@ The demo puts a zombie outbreak on a real population map of Czechia. A visitor:
 The model is the humans-zombies-removed (SZR) model of Munz et al. (2009), "When Zombies Attack!: Mathematical Modelling of an Outbreak of Zombie Infection", run as a reaction-diffusion system on a grid:
 
 ```
-∂S/∂t = −β S Z + ∇·(χ S ∇Z)                 humans are bitten, and flee from nearby zombies
-∂Z/∂t =  β S Z − α S Z + ζ R + D_Z ΔZ        zombies spread, are destroyed, and the dead rise
-∂R/∂t =  α S Z − ζ R
+∂S/∂t = −β S Z [Z ≥ θ] + ∇·(χ S ∇z)                 humans are bitten, and flee from zombies
+∂Z/∂t =  β S Z [Z ≥ θ] − α S Z + ζ R + D_Z ΔZ        zombies spread, are destroyed, and the dead rise
+∂R/∂t =  α S Z − ζ R                                  where z = Z / (S + Z) is the zombie share
 ```
 
+The reference implementation is `src/zombie_outbreak/model.py`, whose docstring gives the exact step. `demo/src/sim/szr.js` is its port.
+
 - **Units.** S, Z and R are densities in people per km². The terms are mass action, so crowded cells spread the outbreak faster. The original notebook used βSI/N, which ignored density.
-- **Movement.** Zombies diffuse. Humans drift down the zombie gradient, and the solver uses an upwind scheme for that term. Nothing else moves.
-- **Cutoff.** On each step, any cell with fewer than about one zombie is set to zero. Without the cutoff, the deterministic model spreads vanishingly small fractions of a zombie everywhere, and no cordon could ever hold.
+- **Movement.** Zombies diffuse. Humans flee down the gradient of the zombie *share* z, upwind. Using the share rather than Z keeps the flow bounded at any density. Nothing else moves.
+- **Cutoff.** Zombies can bite only in cells with at least θ ≈ 1 zombie per km². This is Brunet and Derrida's cutoff for pulled fronts. Without it, the deterministic model spreads vanishingly small fractions of a zombie everywhere, they all grow, and no cordon could ever hold. With it, a thin tail of zombies ahead of the front, or past a cordon, can drift and be destroyed but cannot seed new outbreaks.
+  - The first plan was to set such cells to zero on each step instead. Taken literally, that stalls fronts in sparse areas, because a cell can never build up to one zombie over several steps, and it makes results depend on dt.
+  - Cells under ε = 0.001 zombies are still cleared, to keep the arrays clean. They are counted, so the books balance.
 - **Cordons.** A cordon blocks movement across the cell edges it covers, for every compartment.
-- **National border.** Zombies that cross the border leave the model. They are counted as exported to Germany, Poland, Austria or Slovakia, depending on which neighbour's border they cross.
-- **Numerics.** Explicit time steps with operator splitting, and dt chosen so D·dt/dx² ≤ 0.25. The JS solver is tested against a NumPy reference implementation.
+- **National border.** Zombies that cross the border leave the model. They are counted as exported to Germany, Poland, Austria or Slovakia, depending on which neighbour's border they cross. Humans don't cross the border, so fleeing stays inside Czechia.
+- **Numerics.** Each step is split into encounters, wandering, fleeing and clean-up, in that order. Encounters use an exponential update (S·(1 − e^(−βZ dt)) and so on), which matches the equations to first order and keeps every compartment non-negative at any dt. Stability needs D·dt ≤ 0.25 km² and 4χ·dt ≤ 1.
 
 ## The map
 
@@ -116,10 +120,17 @@ Split into three PRs.
 - [x] Checked in Edge: standalone, with phone layout, and embedded as the site does it (under `/demos/zombie-outbreak/`, with `data-embedded` and `data-theme`).
 
 **3b. The model (PR)**
-- [ ] NumPy reference model, with pytest invariants (populations stay non-negative; S+Z+R is conserved apart from border losses).
-- [ ] JS solver in a worker, tested against the NumPy model on a small grid.
+- [x] NumPy reference model (`src/zombie_outbreak/model.py`), with pytest checks:
+  - one cell follows Munz's equations (solved with SciPy), converging at first order in dt
+  - nobody's count goes negative, and the total is conserved once exports and clearing are counted
+  - the cutoff, fleeing, border export, cordons, and the stability guard.
+- [x] JS solver (`demo/src/sim/szr.js`). It replays two fixtures written from the reference model (`tests/fixtures/szr.json`) to within 1e-14 relative.
+  - Speed on the full grid (163,009 cells, Node 24 on Mark's PC): about 1.6 ms per step early in an outbreak, and 4 ms with zombies everywhere.
+  - It only visits Czech cells and the rim just across the border, and skips work that would only add zeros. Both shortcuts are exact.
 
 **3c. Running it (PR, then release)**
+- [ ] Run the solver in a worker (`?worker&inline`), with the UI's protocol. Moved here from 3b, because the messages depend on what the UI needs.
+  - The no-quarantine baseline doesn't depend on anything the visitor does, so it can run ahead, or once per scenario and strain.
 - [ ] Zombies and the dead on the map, the inset chart, scenarios and strains, the speed control, and the live status line.
 - [ ] Rewrite the manifest: summary, tags, and `about`. Update `built`. Replace `static.webp` with the opening state.
 
