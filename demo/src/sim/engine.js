@@ -4,17 +4,23 @@
 //
 // Until the detection day the outbreak is hidden: frames are painted as if nobody had been bitten,
 // and the crew waits. From then on it builds the queued cordons and seals, and frames show the truth.
+//
+// The same engine runs the baseline, a run with no quarantine, in a second worker, with trace().
 
 import { NEIGHBOUR_BASE } from '../grid.js';
 import { createPainter } from '../render/paint.js';
 import { createQueue } from './crew.js';
+import { createEnclosures } from './enclosures.js';
 import { createSim } from './szr.js';
 
 /**
- * Returns { init, setColours, reset, setParams, addItem, undo, clear, advance, frame, recycle, probe }.
- * A frame is { day, totals: { humans, zombies, dead, exported }, ended, detected, work, pixels }:
- * `work` is the km of cordon the crew has built, and pixels an ArrayBuffer of width × height RGBA
- * pixels.
+ * Returns { init, setColours, reset, setParams, addItem, undo, clear, advance, sample, trace, frame,
+ * recycle, probe }. A frame is { day, totals: { humans, zombies, dead, exported }, ended, detected, work,
+ * sealedIn, exports, pixels }:
+ * - work: the km of cordon the crew has built
+ * - sealedIn: the humans walled in with zombies so far (see enclosures.js)
+ * - exports: [[neighbour label, zombies], ...], the zombies that crossed into each country
+ * - pixels: an ArrayBuffer of width × height RGBA pixels.
  */
 export function createEngine({ lastDay, detectionDay, buildSpeed }) {
   let grid = null;
@@ -28,6 +34,7 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
   let work = 0; // km built
   let applied = -1; // the whole km of work that `blocks` shows
   let unseen = null; // what the map shows before detection: the starting population, and no zombies
+  let enclosures = null;
   const spares = [];
 
   const detected = () => sim.day >= detectionDay - 1e-9;
@@ -36,6 +43,7 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
     applied = Math.floor(work + 1e-9);
     queue.fillBlocks(work, blocks);
     sim.setBlocks(blocks);
+    enclosures.update(queue.builtEdges(work), blocks, sim.S, sim.Z, params.threshold);
   };
 
   const totals = () => {
@@ -62,6 +70,7 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
       queue = createQueue(width * height);
       blocks = new Uint8Array(width * height);
       unseen = { S: Float64Array.from(population), Z: new Float64Array(width * height) };
+      enclosures = createEnclosures(grid);
     },
 
     /** Takes the map colours as hex strings (see render/paint.js). */
@@ -77,11 +86,14 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
       ended = false;
       queue.clear();
       work = 0;
+      enclosures.reset();
       applyBlocks();
     },
 
+    /** Changes the parameters from now on, and returns the day they take effect. */
     setParams(nextParams) {
       params = nextParams;
+      return sim.day;
     },
 
     /** Queues a cordon or seal for the crew: { edges, ...info } (see crew.js). */
@@ -119,12 +131,30 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
       if (!ended && totals().zombies === 0) ended = true;
     },
 
+    /** The day and the totals, without painting: { day, totals }. */
+    sample() {
+      return { day: sim.day, totals: totals() };
+    },
+
+    /**
+     * Runs like advance() for `days` days, without painting, and samples the totals every `every`
+     * days: { samples: [{ day, totals }, ...], ended }. The baseline uses this.
+     */
+    trace(days, every) {
+      const samples = [];
+      for (let done = 0; done < days - 1e-9 && !ended; done += every) {
+        engine.advance(Math.min(every, days - done));
+        samples.push({ day: sim.day, totals: totals() });
+      }
+      return { samples, ended };
+    },
+
     /** The current frame, painted into a recycled buffer when there is one. */
     frame() {
       const pixels = spares.pop() ?? new ArrayBuffer(grid.width * grid.height * 4);
       const seen = detected() ? sim : unseen;
       painter.paint(new Uint32Array(pixels), seen.S, seen.Z, params.beta);
-      return { day: sim.day, totals: totals(), ended, detected: detected(), work, pixels };
+      return { day: sim.day, totals: totals(), ended, detected: detected(), work, sealedIn: enclosures.total, exports: [...sim.exported], pixels };
     },
 
     /** Gives back a frame's buffer for reuse. */

@@ -9,6 +9,9 @@
 // This thread keeps a copy of the queue to draw it; the worker's copy blocks each edge once it is
 // built. Until the detection day the outbreak is hidden, here as in the worker: no zombies on the
 // chart or in the status line.
+//
+// The baseline, the same outbreak with no quarantine, runs ahead in a second worker
+// (sim/baseline.js), for the chart's faint line and the end summary's "saved".
 
 import manifest from 'virtual:manifest';
 import { getTheme, mount, select, slider, toggle, token } from '@mark-bugden/demo-kit';
@@ -17,12 +20,14 @@ import '@mark-bugden/demo-kit/frame.css';
 import './demo.css';
 import { actions, chooser, group } from './controls.js';
 import { NEIGHBOUR_BASE, loadGrid } from './grid.js';
-import { chartBox, compact, createHistory, drawChart } from './render/chart.js';
+import { SAMPLE_DAYS, chartBox, compact, createHistory, drawChart } from './render/chart.js';
 import { drawCordons } from './render/cordons.js';
 import { borderSegments, createMap, readColours } from './render/map.js';
+import { createBaseline } from './sim/baseline.js';
 import { createClient } from './sim/client.js';
 import { createQueue } from './sim/crew.js';
 import { DETECTION_DAY, FIXED, LAST_DAY, PATIENTS_ZERO, SLIDERS, STRAINS } from './strains.js';
+import { createSummary } from './summary.js';
 import { edgeLine, sealEdges, snapStroke, strokeEdges } from './tools/cordon.js';
 
 // Simulated days per second of animation, at 1×.
@@ -36,6 +41,8 @@ const CUSTOM = 'custom';
 const SNAP = { mouse: 14, pen: 14, touch: 24 };
 // For this many days after detection, the status line says the outbreak has been detected.
 const NEWS_DAYS = 6;
+// How long the Advanced sliders must rest, in ms, before the baseline re-runs with their change.
+const SETTLE = 400;
 const number = new Intl.NumberFormat('en-GB');
 const NOTHING = createHistory(); // what the chart shows before detection
 
@@ -68,6 +75,9 @@ let stroke = null; // the cordon being drawn: [[x, y], ...] in cell units
 let strokeReach = SNAP.mouse; // its snapping distance, in CSS pixels
 let borderCorners = null; // grid corners on the national border, which a stroke's ends can join
 const seals = new Map(); // region id → its seal's edges, computed when first needed
+let baseline = null;
+let job = null; // the baseline's run: { cell, zombies, schedule: [{ day, params }, ...] }
+let settling = 0; // the timer that re-runs the baseline after a slider change
 const history = createHistory();
 
 const params = () => ({ ...advanced.value, ...FIXED });
@@ -110,9 +120,20 @@ const app = mount({
     }));
     const box = chartBox(width);
     const seen = Boolean(latest?.detected);
-    if (box) drawChart(ctx, box, seen ? history : NOTHING, { total: grid.total, lastDay: LAST_DAY, colours: colours.chart, font: colours.font, latest: seen ? latest.totals : null });
+    if (box) {
+      drawChart(ctx, box, seen ? history : NOTHING, {
+        total: grid.total,
+        lastDay: LAST_DAY,
+        colours: colours.chart,
+        font: colours.font,
+        latest: seen ? latest.totals : null,
+        baseline: seen ? baseline.trace : null,
+        until: latest?.day,
+      });
+    }
   },
 });
+const summary = createSummary(app.stage.closest('.dk-main'));
 app.stage.setAttribute('aria-label', 'Map of Czechia at 1 km resolution: where people live, where the zombie outbreak has spread, and the cordons drawn against it.');
 
 function applyColours() {
@@ -144,6 +165,7 @@ function show(frame) {
   history.push(frame);
   if (frame.ended) app.pause();
   refreshStatus();
+  showSummary();
   app.redraw();
 }
 
@@ -173,8 +195,12 @@ function startRun() {
   queue.clear();
   stroke = null;
   afterEdit();
+  summary.hide();
+  clearTimeout(settling);
   const [col, row] = grid.cities.find((city) => city.name === scenario.value).cell;
-  client.reset({ cell: row * grid.width + col, zombies: PATIENTS_ZERO, params: params() }, takeSpare())
+  job = { cell: row * grid.width + col, zombies: PATIENTS_ZERO, schedule: [{ day: 0, params: params() }] };
+  baseline.start(job);
+  client.reset({ cell: job.cell, zombies: job.zombies, params: job.schedule[0].params }, takeSpare())
     .then((frame) => {
       if (current !== run) {
         spare = frame.pixels;
@@ -199,7 +225,10 @@ function liveStatus() {
   if (!latest) return 'Starting the outbreak…';
   const { day, totals, ended, detected } = latest;
   if (!detected) return `Day ${Math.floor(day)}: no outbreak detected yet.${cordonStatus(false)}`;
-  const counts = `${compact(totals.humans)} humans, ${compact(totals.zombies)} zombies, ${compact(totals.dead)} dead`;
+  const base = queue.total > 0 ? baseline.at(day) : null;
+  const gap = base ? totals.humans - base.humans : 0;
+  const versus = Math.abs(gap) >= 1 ? ` (${compact(Math.abs(gap))} ${gap > 0 ? 'more' : 'fewer'} than with no quarantine)` : '';
+  const counts = `${compact(totals.humans)} humans${versus}, ${compact(totals.zombies)} zombies, ${compact(totals.dead)} dead`;
   const crossed = totals.exported >= 1 ? `, and ${compact(totals.exported)} zombies have crossed the border` : '';
   if (ended) {
     const how = totals.zombies === 0 ? 'The outbreak died out' : 'The run ended';
@@ -235,6 +264,22 @@ function refreshStatus() {
   client.probe(cell).then((values) => {
     if (cell === hoverCell) app.status(describe(cell, values));
   }).catch(fail);
+}
+
+/** Shows the end summary once the run has ended. Until the baseline has finished, "saved" waits. */
+function showSummary() {
+  if (!latest?.ended) return;
+  const trace = baseline.trace;
+  const done = trace?.ended ? trace.humans.at(-1) : null;
+  summary.show({
+    day: latest.day,
+    diedOut: latest.totals.zombies === 0,
+    humans: latest.totals.humans,
+    total: grid.total,
+    baseline: done,
+    sealedIn: latest.sealedIn,
+    exports: latest.exports.map(([label, zombies]) => ({ name: grid.neighbours.find((n) => n.id === label).name, zombies })),
+  });
 }
 
 function fail(error) {
@@ -304,6 +349,16 @@ loadGrid()
     queue = createQueue(grid.width * grid.height);
     borderCorners = nationalCorners();
     client = createClient();
+    baseline = createBaseline({
+      grid,
+      lastDay: LAST_DAY,
+      every: SAMPLE_DAYS,
+      onUpdate: () => {
+        refreshStatus();
+        showSummary();
+        app.redraw();
+      },
+    });
     await client.init(grid);
     await applyColours();
     startRun();
@@ -317,7 +372,15 @@ loadGrid()
     });
     advanced.onChange(() => {
       strain.value = CUSTOM;
-      client.setParams(params()).catch(fail);
+      const next = params();
+      const current = run;
+      client.setParams(next).then((day) => {
+        if (current !== run) return;
+        // The baseline takes the same change on the same day, once the sliders settle.
+        job = { ...job, schedule: [...job.schedule.filter((change) => change.day < day - 1e-9), { day, params: next }] };
+        clearTimeout(settling);
+        settling = setTimeout(() => baseline.start(job), SETTLE);
+      }).catch(fail);
     });
     draw.onChange((on) => {
       app.stage.classList.toggle('zo-drawing', on);

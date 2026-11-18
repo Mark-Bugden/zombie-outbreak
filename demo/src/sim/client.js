@@ -34,11 +34,13 @@ export function createClient() {
     init: ({ width, height, labels, population }) => call('init', { grid: { width, height, labels, population } }),
     setColours: (colours) => call('colours', { colours }),
     reset: (run, spare) => call('reset', { ...run, spare }),
-    setParams: (params) => call('params', { params }),
+    start: (run) => call('start', run), // reset() without painting: resolves to { day, totals }
+    setParams: (params) => call('params', { params }), // resolves to the day the change takes effect
     addItem: (item) => call('add', { item }),
     undo: () => call('undo'),
     clear: () => call('clear'),
     advance: (days, spare) => call('advance', { days, spare }),
+    trace: (days, every) => call('trace', { days, every }),
     repaint: (spare) => call('repaint', { spare }),
     probe: (cell) => call('probe', { cell }),
   };

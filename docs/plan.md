@@ -184,7 +184,12 @@ Split into three PRs, like step 3.
   - These trials are a best case: the simulated visitor draws a perfect circle on the day of detection. A real one loses 2 days for every second they take at 1×, unless they plan before detection.
 
 **4b. Saved, sealed in, exported (PR)**
-- [ ] Baseline run, saved / sealed in / exported, and the end summary.
+- [x] Baseline run, saved / sealed in / exported, and the end summary.
+  - **The baseline** (`sim/baseline.js`) is the same engine in a second worker, without painting: it runs ahead 10 days per request, sampled every half day, and finished baselines are cached by city, strain and slider changes. A slider change mid-run applies to both runs from the same day: the main worker reports the day it took effect, and once the sliders rest for 0.4 s the baseline re-runs from day 0 with the change on that day.
+  - **Saved** is the survivors at the end minus the baseline's. Once anything is planned, the status line also gives the difference so far, and the chart draws the baseline's humans as a dashed line.
+  - **Sealed in** (`sim/enclosures.js`). Walls are tracked as a union-find over grid corners: built cordon, plus the national border, which humans can't cross. An edge whose two ends are already joined closes off an area; only then are the areas labelled, and each one other than the largest that holds zombies able to bite counts its humans, each km² once. The count is kept if the cordon is later undone, since it records the moment of closing.
+  - **Exported** is the model's tally of zombies that crossed into each neighbour.
+  - **The end summary** is a card under the map with the four numbers. "Saved" says "Comparing…" until the baseline has finished.
 
 **4c. Stills, write-up and release (PR, then release)**
 - [ ] Re-render the stills (`scripts/stills.py`), with thumb/og showing a cordon.
