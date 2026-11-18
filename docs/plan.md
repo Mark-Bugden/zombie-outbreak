@@ -57,7 +57,7 @@ The look is called "the lights go out":
 - **Dark theme.** Population as sodium-amber (`#F6BE55`) lights on the navy background, zombies glowing H-alpha red (`#C2391B`), and the dead going dark.
 - **Light theme.** Ink density on the pale background, with red zombies.
 
-These colours live as demo-local tokens in `demo/src/demo.css`, scoped to `[data-demo]`, and the chart uses them too. demo-kit v0.1.0's frame tokens predate the site's redesign. We leave them alone here, and update the kit once this demo ships (see Milestones).
+These colours come from demo-kit v0.2.0's tokens, which match the site's design. The map reads `--color-bg`, `--color-surface`, `--color-text`, `--color-border` and `--color-curve`, and will read `--color-halpha` for zombies in 3c. The one demo-local token is `--zo-people` in `demo/src/demo.css`: sodium amber on dark, `--color-muted` on light. Like the kit, the demo is dark unless `<html data-theme="light">`.
 
 Still to check: H-alpha red on the dark background has lower contrast than the site's own pairs. Test it, and adjust the zombie colour on dark if needed.
 
@@ -130,8 +130,9 @@ Split into three PRs.
 - [ ] Model card (sources: WorldPop, Natural Earth, Munz et al. 2009) and the draft write-up in `docs/writeup.md`.
 - [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
 
-### 5. After this demo: demo-kit `v0.2.0`
-- [ ] Separate PR on demo-kit: the site's redesign tokens and fonts, dark as the default, and this demo's map tokens added to the kit. Then bump this demo to the new kit version.
+### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)
+- [x] Separate PR on demo-kit, done by another agent: the site's redesign tokens and fonts, dark as the default, and the tokens this demo's map needs (`--color-curve`, `--color-sodium`, `--color-halpha`).
+- [x] Bump this demo to it. The map's colours now come from the kit's tokens, and its pixels are unchanged apart from the stage's rounded corners.
 
 ## Open questions
 
