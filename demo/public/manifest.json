@@ -4,7 +4,7 @@
   "tagline": "Simulating a zombie outbreak across a real population map.",
   "summary": "A zombie outbreak spreading across Czechia, simulated on a 1 km population map. Every square kilometre runs Munz et al.'s humans–zombies–removed model, with zombies wandering, humans fleeing and the dead rising, as a front of bites sweeps out from Prague, Brno or Ostrava. Draw cordons and seal regions to contain it, built by a single crew at a fixed pace.",
   "tags": ["mathematical modelling", "PDEs", "epidemiology", "data visualisation"],
-  "status": "in-progress",
+  "status": "live",
   "repo": "https://github.com/Mark-Bugden/zombie-outbreak",
   "kitVersion": "0.2.0",
   "built": "2026-11-18",

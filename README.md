@@ -4,7 +4,7 @@ A simulation of a zombie outbreak across a real population map of Czechia, with 
 
 The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), run as a reaction-diffusion system on a 1 km population grid.
 
-**Status:** in progress. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw cordons and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The stills and the write-up come next. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md).
+**Status:** live from `v1.0.0`. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw cordons and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md), and the draft write-up is in [docs/writeup.md](docs/writeup.md).
 
 ## Repository layout
 
@@ -14,7 +14,7 @@ The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), r
 | [`src/zombie_outbreak/`](src/zombie_outbreak/) | Python: the data prep that builds the demo's population grid, and `model.py`, the reference implementation of the SZR model that the demo's solver is a port of. |
 | [`tests/`](tests/) | Python tests, and `fixtures/szr.json`: reference runs that the demo's solver must reproduce. |
 | [`Data/`](Data/) | Source data: WorldPop population density and Natural Earth boundaries. Its README lists sources and licences. |
-| [`docs/`](docs/) | The plan, and later the write-up. |
+| [`docs/`](docs/) | The plan, and the draft write-up for the site. |
 | [`scripts/`](scripts/) | `stills.py`, which renders the demo's still images from the built demo in a real browser. |
 | [`legacy/`](legacy/) | The original 2023 notebooks, kept for reference. |
 
