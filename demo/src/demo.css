@@ -24,6 +24,8 @@
  * The layout: the controls in a rail beside the chart, the map and the status line, as the kit has
  * them on wide frames; on narrow ones they go below the map, so the chart and the map come first.
  * The whole demo fits in the window: the chart and the map's stage shrink with the window's height.
+ * On the site, the window is what the page leaves below its title (--dk-fit-height, which the site
+ * sets); standalone, it is the whole window.
  *
  * The map's stage takes the map's shape (511 × 319 km, plus the map's padding) at the main column's
  * full width, up to the manifest's height and to what the window leaves after the chart and the
@@ -32,7 +34,7 @@
  */
 [data-demo] {
   --zo-chart-height: clamp(120px, 20dvh, 180px);
-  --zo-fit: calc(100dvh - var(--zo-chart-height) - 8rem);
+  --zo-fit: calc(var(--dk-fit-height, 100dvh) - var(--zo-chart-height) - 8rem);
   --zo-rail: 16rem;
 }
 

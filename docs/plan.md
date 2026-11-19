@@ -241,7 +241,13 @@ Asked for by Mark on 2026-11-19.
 Asked for by Mark on 2026-11-19: the controls go back on the side, and the whole demo should be visible without scrolling.
 - [x] **Controls on the side.** On wide frames the controls are a 16rem rail beside the chart, the map and the status line, as the kit lays them out. On narrow frames they stay below the map, so the chart and the map come first.
 - [x] **It fits the window.** The chart's height follows the window's (120 to 180 px, 20% of it), and the map's stage takes the map's shape at the main column's width, up to the manifest's 620 px and to what the window leaves after the chart and the status line. Measured in Edge, the rail, chart, map and status line all fit at 1920×960, 1440×800, 1280×720, 1366×650, 1024×700 and 820×1100; on a 390×760 phone, the chart, map and status line fit, with the controls below.
-- [ ] Release `v1.3.0`, and move the site to it.
+- [x] Released `v1.3.0` on 2026-11-19 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v1.3.0)); the site moved to it in [Mark-Bugden.github.io#14](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/14).
+
+### 9. Release on merge, and fit below the site's title: release `v1.4.0`
+Asked for by Mark on 2026-11-19: each change should be one PR that goes live when it merges, and the demo should be fully visible when its project page opens.
+- [x] **Release on merge.** `demo/package.json`'s `version` is the release. A PR that changes the demo must bump it, or CI fails. When it merges, the Demo workflow builds the bundle, sets `built` to that day, releases `v<version>` and starts the site's build (with the `SITE_DEPLOY_TOKEN` secret). The site now takes each project's latest release ([Mark-Bugden.github.io#16](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/16)), so there's no tag to push and no site PR.
+- [x] **Fits below the site's title.** On the project page, the title is now the only thing above the demo ([Mark-Bugden.github.io#17](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/17)). The site sets `--dk-fit-height` to the window's height less what sits above the demo, and `--zo-fit` reads it in place of `100dvh`. Standalone, nothing changes. Measured with the site's branch: fits at 1920×960, 1536×730 and 1440×790. At 1366×650 it is 37 px short, held by the stage's 14rem minimum.
+- [ ] Merging releases `v1.4.0`.
 
 ## Open questions
 
