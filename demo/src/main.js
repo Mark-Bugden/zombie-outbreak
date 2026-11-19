@@ -2,13 +2,13 @@
 //
 // The simulation runs in a worker (sim/client.js), which also paints each frame. This thread keeps
 // the animation clock: each tick it owes the worker some simulated days (2 per second at 1×), sends
-// them when the last frame is back, and draws the newest frame with the borders, the quarantine and
-// the chart on top.
+// them when the last frame is back, and draws the newest frame with the borders and the quarantine
+// on top, and the chart above the map.
 //
-// The quarantine: cordons drawn on the map and sealed regions join one build queue (sim/crew.js).
-// This thread keeps a copy of the queue to draw it; the worker's copy blocks each edge once it is
-// built. Until the detection day the outbreak is hidden, here as in the worker: no zombies on the
-// chart or in the status line.
+// The quarantine: blockades drawn on the map and sealed regions join one build queue (sim/crew.js).
+// In the code they are cordons. This thread keeps a copy of the queue to draw it; the worker's copy
+// blocks each edge once it is built. Until the detection day the outbreak is hidden on the map, in
+// the status line and in the hover readout, here as in the worker; the chart shows the truth all along.
 //
 // The baseline, the same outbreak with no quarantine, runs ahead in a second worker
 // (sim/baseline.js), for the chart's faint line and the end summary's "saved".
@@ -20,7 +20,7 @@ import '@mark-bugden/demo-kit/frame.css';
 import './demo.css';
 import { actions, chooser, group } from './controls.js';
 import { NEIGHBOUR_BASE, loadGrid } from './grid.js';
-import { SAMPLE_DAYS, chartBox, compact, createHistory, drawChart } from './render/chart.js';
+import { SAMPLE_DAYS, compact, createHistory, drawChart } from './render/chart.js';
 import { drawCordons } from './render/cordons.js';
 import { borderSegments, createMap, readColours } from './render/map.js';
 import { createBaseline } from './sim/baseline.js';
@@ -41,10 +41,12 @@ const CUSTOM = 'custom';
 const SNAP = { mouse: 14, pen: 14, touch: 24 };
 // For this many days after detection, the status line says the outbreak has been detected.
 const NEWS_DAYS = 6;
+// The notice on the map when the outbreak is detected, and how long it stays, in ms.
+const NOTICE = 'Infection detected. Build blockades to stop the spread of infection.';
+const NOTICE_TIME = 8000;
 // How long the Advanced sliders must rest, in ms, before the baseline re-runs with their change.
 const SETTLE = 400;
 const number = new Intl.NumberFormat('en-GB');
-const NOTHING = createHistory(); // what the chart shows before detection
 
 const scenario = select({ label: 'Outbreak starts in', options: ['Prague', 'Brno', 'Ostrava'] });
 const strain = select({
@@ -54,7 +56,7 @@ const strain = select({
 const speed = select({ label: 'Speed', options: [{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '4×', value: 4 }] });
 const sliders = Object.fromEntries(SLIDERS.map(({ name, ...spec }) => [name, slider({ ...spec, value: STRAINS[0].params[name] })]));
 const advanced = group('Advanced', sliders, { collapsible: true });
-const draw = toggle({ label: 'Draw cordon' });
+const draw = toggle({ label: 'Draw blockade' });
 const seal = chooser({ label: 'Seal a region', prompt: 'Choose a region' });
 const edit = actions([{ name: 'undo', label: 'Undo' }, { name: 'clear', label: 'Clear' }]);
 const quarantine = group('Quarantine', { draw, seal, edit });
@@ -64,12 +66,15 @@ let map = null;
 let client = null;
 let colours = null; // the map's and the chart's colours for `colourTheme`
 let colourTheme = null;
-let latest = null; // the newest frame: { day, totals, ended, detected, work }
+let latest = null; // the newest frame: { day, totals, regions, ended, detected, work, ... }
 let spare = null; // the newest frame's pixel buffer, to hand back to the worker
 let busy = false; // a frame request is out
 let owed = 0; // simulated days the animation clock has run ahead of the worker
 let run = 0; // counts runs, so frames from a run that has been replaced are dropped
 let hoverCell = -1;
+let chartPointer = null; // the x of a pointer over the chart, in CSS pixels
+let regionPeople = null; // each region's people at the start, by label - 1
+let noticeTimer = 0;
 let queue = null; // this thread's copy of the build queue
 let stroke = null; // the cordon being drawn: [[x, y], ...] in cell units
 let strokeReach = SNAP.mouse; // its snapping distance, in CSS pixels
@@ -109,32 +114,77 @@ const app = mount({
       owed = Math.min(owed + delta * rate, MAX_LAG * rate);
       pump();
     }
-    map.draw(ctx, width, height, (overlay, scale) => drawCordons(overlay, {
-      items: queue.items,
-      built: queue.built(latest?.work ?? 0),
-      width: grid.width,
-      scale,
-      colour: colours.cordon,
-      crew: Boolean(latest?.detected && !latest.ended),
-      stroke,
-    }));
-    const box = chartBox(width);
-    const seen = Boolean(latest?.detected);
-    if (box) {
-      drawChart(ctx, box, seen ? history : NOTHING, {
-        total: grid.total,
-        lastDay: LAST_DAY,
-        colours: colours.chart,
-        font: colours.font,
-        latest: seen ? latest.totals : null,
-        baseline: seen ? baseline.trace : null,
-        until: latest?.day,
+    map.draw(ctx, width, height, (overlay, scale) => {
+      const region = hoverRegion();
+      if (region) {
+        overlay.save();
+        overlay.globalAlpha = 0.7;
+        overlay.strokeStyle = colours.cordon;
+        overlay.lineWidth = 1.5 / scale;
+        overlay.stroke(map.outline(region));
+        overlay.restore();
+      }
+      drawCordons(overlay, {
+        items: queue.items,
+        built: queue.built(latest?.work ?? 0),
+        width: grid.width,
+        scale,
+        colour: colours.cordon,
+        crew: Boolean(latest?.detected && !latest.ended),
+        stroke,
       });
-    }
+    });
+    paintChart(pixelRatio);
   },
 });
 const summary = createSummary(app.stage.closest('.dk-main'));
-app.stage.setAttribute('aria-label', 'Map of Czechia at 1 km resolution: where people live, where the zombie outbreak has spread, and the cordons drawn against it.');
+app.stage.setAttribute('aria-label', 'Map of Czechia at 1 km resolution: where people live, where the zombie outbreak has spread, and the blockades drawn against it.');
+
+// The chart goes above the map, and the detection notice over the map's top edge.
+const chartCanvas = document.createElement('canvas');
+chartCanvas.className = 'zo-chart';
+chartCanvas.setAttribute('role', 'img');
+chartCanvas.setAttribute('aria-label', `Chart of the humans, zombies and dead in Czechia, day by day, from day 0 to day ${LAST_DAY}.`);
+app.stage.closest('.dk-stage').before(chartCanvas);
+const notice = document.createElement('p');
+notice.className = 'zo-notice';
+notice.setAttribute('role', 'status');
+notice.hidden = true;
+notice.addEventListener('click', () => hideNotice());
+app.stage.closest('.dk-stage').append(notice);
+
+/** Draws the chart, sizing its canvas to its box at `pixelRatio` first. */
+function paintChart(pixelRatio) {
+  const { width, height } = chartCanvas.getBoundingClientRect();
+  const backing = [Math.max(1, Math.round(width * pixelRatio)), Math.max(1, Math.round(height * pixelRatio))];
+  if (chartCanvas.width !== backing[0]) chartCanvas.width = backing[0];
+  if (chartCanvas.height !== backing[1]) chartCanvas.height = backing[1];
+  const ctx = chartCanvas.getContext('2d');
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  drawChart(ctx, { width, height }, history, {
+    total: grid.total,
+    lastDay: LAST_DAY,
+    detectionDay: DETECTION_DAY,
+    day: latest?.day ?? 0,
+    colours: colours.chart,
+    font: colours.font,
+    latest: latest?.totals ?? null,
+    baseline: queue.total > 0 ? baseline.trace : null, // until anything is planned, it is the same run
+    pointer: chartPointer,
+  });
+}
+
+function showNotice() {
+  notice.textContent = NOTICE;
+  notice.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(hideNotice, NOTICE_TIME);
+}
+
+function hideNotice() {
+  clearTimeout(noticeTimer);
+  notice.hidden = true;
+}
 
 function applyColours() {
   colourTheme = getTheme();
@@ -145,7 +195,7 @@ function applyColours() {
     chart: {
       humans: map_.people,
       zombies: map_.zombie,
-      dead: map_.nation,
+      dead: map_.dead,
       panel: read('--color-surface'),
       border: read('--color-border'),
       text: read('--color-text'),
@@ -161,6 +211,7 @@ function applyColours() {
 function show(frame) {
   map.setImage(frame.pixels);
   spare = frame.pixels;
+  if (frame.detected && latest && !latest.detected) showNotice();
   latest = frame;
   history.push(frame);
   if (frame.ended) app.pause();
@@ -196,6 +247,7 @@ function startRun() {
   stroke = null;
   afterEdit();
   summary.hide();
+  hideNotice();
   clearTimeout(settling);
   const [col, row] = grid.cities.find((city) => city.name === scenario.value).cell;
   job = { cell: row * grid.width + col, zombies: PATIENTS_ZERO, schedule: [{ day: 0, params: params() }] };
@@ -216,9 +268,9 @@ function cordonStatus(detected) {
   const total = queue.total;
   if (total === 0) return '';
   const km = (value) => `${number.format(value)} km`;
-  if (!detected) return ` ${km(total)} of cordon planned, to be built once the outbreak is detected.`;
+  if (!detected) return ` ${km(total)} of blockade planned, to be built once the outbreak is detected.`;
   const built = Math.min(Math.floor(latest.work + 1e-9), total);
-  return built === total ? ` Cordons: all ${km(total)} built.` : ` Cordons: ${number.format(built)} of ${km(total)} built.`;
+  return built === total ? ` Blockades: all ${km(total)} built.` : ` Blockades: ${number.format(built)} of ${km(total)} built.`;
 }
 
 function liveStatus() {
@@ -240,30 +292,21 @@ function liveStatus() {
 
 const regionName = (region) => (region.code === 'CZ-PR' ? region.nameEn : `${region.nameEn} Region`);
 
-/** The readout for one cell. Without `values` (before detection) it shows only who lives there. */
-function describe(cell, values) {
+/** The region under the pointer, by label, or 0 when the pointer isn't over Czechia (or is drawing). */
+const hoverRegion = () => (hoverCell >= 0 && !draw.value && !stroke && grid.labels[hoverCell] < NEIGHBOUR_BASE ? grid.labels[hoverCell] : 0);
+
+/** The readout for the region (or country) of one cell. Before detection it shows only who lived there. */
+function describe(cell) {
   const label = grid.labels[cell];
   if (label >= NEIGHBOUR_BASE) return grid.neighbours.find((n) => n.id === label).name;
   const name = regionName(grid.regions[label - 1]);
-  const count = (value) => number.format(Math.round(value));
-  if (!values) return `${name}: ${count(grid.population[cell])} people in this km².`;
-  const { humans, zombies, dead } = values;
-  return `${name}: ${count(humans)} humans, ${count(zombies)} zombies and ${count(dead)} dead in this km².`;
+  if (!latest?.detected) return `${name}: ${compact(regionPeople[label - 1])} people.`;
+  const [humans, zombies, dead] = latest.regions.subarray((label - 1) * 3, label * 3);
+  return `${name}: ${compact(humans)} humans, ${compact(zombies)} zombies and ${compact(dead)} dead.`;
 }
 
 function refreshStatus() {
-  if (hoverCell < 0) {
-    app.status(liveStatus());
-    return;
-  }
-  const cell = hoverCell;
-  if (!latest?.detected || grid.labels[cell] >= NEIGHBOUR_BASE) {
-    app.status(describe(cell, null));
-    return;
-  }
-  client.probe(cell).then((values) => {
-    if (cell === hoverCell) app.status(describe(cell, values));
-  }).catch(fail);
+  app.status(hoverCell < 0 ? liveStatus() : describe(hoverCell));
 }
 
 /** Shows the end summary once the run has ended. Until the baseline has finished, "saved" waits. */
@@ -309,6 +352,7 @@ function afterEdit() {
 function addItem(item) {
   queue.add(item);
   client.addItem(item).catch(fail);
+  hideNotice();
   afterEdit();
 }
 
@@ -345,6 +389,10 @@ function nationalCorners() {
 loadGrid()
   .then(async (loaded) => {
     grid = loaded;
+    regionPeople = new Float64Array(grid.regions.length);
+    grid.labels.forEach((label, i) => {
+      if (label < NEIGHBOUR_BASE) regionPeople[label - 1] += grid.population[i];
+    });
     map = createMap(grid);
     queue = createQueue(grid.width * grid.height);
     borderCorners = nationalCorners();
@@ -423,9 +471,11 @@ loadGrid()
         }
         return;
       }
+      const region = hoverRegion();
       hoverCell = map.cellAt(x, y);
       app.stage.classList.toggle('zo-sealable', !draw.value && czechCell(hoverCell) && !isSealed(grid.labels[hoverCell]));
       refreshStatus();
+      if (hoverRegion() !== region) app.redraw();
     });
     app.stage.addEventListener('pointerup', (event) => {
       if (!stroke) return;
@@ -439,12 +489,27 @@ loadGrid()
     app.stage.addEventListener('pointerleave', () => {
       hoverCell = -1;
       refreshStatus();
+      app.redraw();
     });
     app.stage.addEventListener('click', (event) => {
       if (draw.value) return;
       const cell = map.cellAt(...stagePoint(event));
       if (czechCell(cell)) sealRegion(grid.labels[cell]);
     });
+
+    // Pointing at the chart (or touching it) reads off a day.
+    const pointAtChart = (event) => {
+      chartPointer = event.clientX - chartCanvas.getBoundingClientRect().left;
+      app.redraw();
+    };
+    const leaveChart = () => {
+      chartPointer = null;
+      app.redraw();
+    };
+    chartCanvas.addEventListener('pointerdown', pointAtChart);
+    chartCanvas.addEventListener('pointermove', pointAtChart);
+    chartCanvas.addEventListener('pointerleave', leaveChart);
+    chartCanvas.addEventListener('pointercancel', leaveChart);
   })
   .catch((error) => {
     app.status('The population map could not be loaded.');

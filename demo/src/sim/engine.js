@@ -15,8 +15,10 @@ import { createSim } from './szr.js';
 
 /**
  * Returns { init, setColours, reset, setParams, addItem, undo, clear, advance, sample, trace, frame,
- * recycle, probe }. A frame is { day, totals: { humans, zombies, dead, exported }, ended, detected, work,
- * sealedIn, exports, pixels }:
+ * recycle }. A frame is { day, totals: { humans, zombies, dead, exported }, regions, ended, detected,
+ * work, sealedIn, exports, pixels }:
+ * - regions: the humans, zombies and dead in each region, as a Float64Array of three numbers per
+ *   region, in label order (region 1's humans, zombies, dead, then region 2's, ...)
  * - work: the km of cordon the crew has built
  * - sealedIn: the humans walled in with zombies so far (see enclosures.js)
  * - exports: [[neighbour label, zombies], ...], the zombies that crossed into each country
@@ -35,6 +37,7 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
   let applied = -1; // the whole km of work that `blocks` shows
   let unseen = null; // what the map shows before detection: the starting population, and no zombies
   let enclosures = null;
+  let regionCount = 0;
   const spares = [];
 
   const detected = () => sim.day >= detectionDay - 1e-9;
@@ -61,15 +64,29 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
     return { humans, zombies, dead, exported };
   };
 
+  /** The frame's `regions`. */
+  const regionTotals = () => {
+    const out = new Float64Array(regionCount * 3);
+    for (let k = 0; k < czech.length; k++) {
+      const i = czech[k];
+      const j = (grid.labels[i] - 1) * 3;
+      out[j] += sim.S[i];
+      out[j + 1] += sim.Z[i];
+      out[j + 2] += sim.R[i];
+    }
+    return out;
+  };
+
   const engine = {
     /** Takes the grid: { width, height, labels, population }. */
     init({ width, height, labels, population }) {
       grid = { width, height, labels, population };
       painter = createPainter(grid);
       czech = Int32Array.from(labels.reduce((cells, label, i) => (label < NEIGHBOUR_BASE ? (cells.push(i), cells) : cells), []));
+      regionCount = czech.reduce((max, i) => Math.max(max, labels[i]), 0);
       queue = createQueue(width * height);
       blocks = new Uint8Array(width * height);
-      unseen = { S: Float64Array.from(population), Z: new Float64Array(width * height) };
+      unseen = { S: Float64Array.from(population), Z: new Float64Array(width * height), R: new Float64Array(width * height) };
       enclosures = createEnclosures(grid);
     },
 
@@ -153,18 +170,23 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
     frame() {
       const pixels = spares.pop() ?? new ArrayBuffer(grid.width * grid.height * 4);
       const seen = detected() ? sim : unseen;
-      painter.paint(new Uint32Array(pixels), seen.S, seen.Z, params.beta);
-      return { day: sim.day, totals: totals(), ended, detected: detected(), work, sealedIn: enclosures.total, exports: [...sim.exported], pixels };
+      painter.paint(new Uint32Array(pixels), seen.S, seen.Z, seen.R, params.beta);
+      return {
+        day: sim.day,
+        totals: totals(),
+        regions: regionTotals(),
+        ended,
+        detected: detected(),
+        work,
+        sealedIn: enclosures.total,
+        exports: [...sim.exported],
+        pixels,
+      };
     },
 
     /** Gives back a frame's buffer for reuse. */
     recycle(buffer) {
       if (buffer?.byteLength === grid.width * grid.height * 4) spares.push(buffer);
-    },
-
-    /** One cell's humans, zombies and dead. */
-    probe(cell) {
-      return { humans: sim.S[cell], zombies: sim.Z[cell], dead: sim.R[cell] };
     },
   };
   return engine;

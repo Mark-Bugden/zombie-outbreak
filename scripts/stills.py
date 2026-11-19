@@ -1,11 +1,14 @@
 """Renders the demo's still images from the built demo, in a real browser.
 
 - static.webp: the opening state (day 0), shown while the demo loads and without JavaScript.
-- thumb.webp and og.jpg: the default run (Munz et al. from Prague) with a ring of cordon drawn
+- thumb.webp and og.jpg: the default run (Munz et al. from Prague) with a ring of blockade drawn
   around Prague before detection, on CARD_DAY, for the project card and link previews.
+- static-light.webp and thumb-light.webp: the same in the light theme, which the site shows
+  under its light theme. og.jpg stays dark only: link previews have no theme.
 
 It serves demo/dist/ locally, drives it with Playwright, and writes the images to demo/public/,
-fitted onto the dark page colour and kept under the bundle contract's size limits. Build first:
+fitted onto their theme's page colour and kept under the bundle contract's size limits. Each still
+is of the map's stage alone, at 16:9. Build first:
 
     cd demo && npm run build && cd ..
     uv run --with playwright --with pillow python scripts/stills.py            # Microsoft Edge
@@ -29,17 +32,23 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "demo" / "dist"
 OUT = ROOT / "demo" / "public"
-BACKGROUND = (10, 14, 20)  # --color-bg, dark: the site's default theme
+THEMES = ("dark", "light")
+BACKGROUND = {"dark": (10, 14, 20), "light": (245, 246, 248)}  # --color-bg in each theme
 CARD_DAY = 30
-# The card's cordon: a ring around Prague, in cells (km), drawn before detection. It holds.
+# The card's blockade: a ring around Prague, in cells (km), drawn before detection. It holds.
 PRAGUE = (174, 139)
 RING = 55
 GRID = (511, 319)
 PADDING = 12  # the map's padding inside the stage, as in demo/src/render/map.js
-# A narrow page gets a 16:9 stage and no inset chart; this scale makes it about 1200 px wide.
+# A narrow page; this scale makes its stage about 1200 px wide.
 VIEWPORT = {"width": 540, "height": 1400}
 SCALE = 2.4
 READY = "/Day \\d+/.test(document.querySelector('.dk-status')?.textContent)"
+# The stage at 16:9, as the card shows it, and no detection notice over the map.
+STILL_STYLE = (
+    "[data-demo] .dk-stage { height: auto !important; aspect-ratio: 16 / 9 !important; }"
+    " [data-demo] .zo-notice { display: none !important; }"
+)
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -54,11 +63,11 @@ def serve():
     return server
 
 
-def fit(png, width, height):
+def fit(png, width, height, theme):
     image = Image.open(io.BytesIO(png)).convert("RGB")
     scale = min(width / image.width, height / image.height)
     image = image.resize((round(image.width * scale), round(image.height * scale)), Image.LANCZOS)
-    canvas = Image.new("RGB", (width, height), BACKGROUND)
+    canvas = Image.new("RGB", (width, height), BACKGROUND[theme])
     canvas.paste(image, ((width - image.width) // 2, (height - image.height) // 2))
     return canvas
 
@@ -75,9 +84,27 @@ def save(image, name, fmt, limit, **options):
     print(f"{name}: {image.width}×{image.height}, quality {quality}, {buffer.tell() / 1000:.1f} KB")
 
 
+def open_page(browser, url, **options):
+    page = browser.new_page(viewport=VIEWPORT, device_scale_factor=SCALE, **options)
+    page.goto(url)
+    page.add_style_tag(content=STILL_STYLE)
+    page.wait_for_function(READY, timeout=30000)
+    return page
+
+
+def shoot(page):
+    """Screenshots the stage in each theme: {theme: png}."""
+    shots = {}
+    for theme in THEMES:
+        page.evaluate(f"document.documentElement.dataset.theme = '{theme}'")
+        page.wait_for_timeout(500)  # the worker repaints in the theme's colours
+        shots[theme] = page.locator(".dk-stage").screenshot()
+    return shots
+
+
 def draw_ring(page):
-    """Draws the card's cordon with the mouse: a closed ring of RING km around Prague."""
-    page.get_by_label("Draw cordon").check()
+    """Draws the card's blockade with the mouse: a closed ring of RING km around Prague."""
+    page.get_by_label("Draw blockade").check()
     stage = page.locator(".dk-stage-content")
     stage.scroll_into_view_if_needed()
     box = stage.bounding_box()
@@ -93,7 +120,7 @@ def draw_ring(page):
     for point in points[1:]:
         page.mouse.move(*point, steps=2)
     page.mouse.up()
-    page.get_by_label("Draw cordon").uncheck()
+    page.get_by_label("Draw blockade").uncheck()
     page.mouse.move(0, 0)
 
 
@@ -107,16 +134,12 @@ def main():
         browser = p.chromium.launch(channel=channel)
 
         # The opening state: with reduced motion, the demo starts paused on day 0.
-        page = browser.new_page(viewport=VIEWPORT, device_scale_factor=SCALE, reduced_motion="reduce")
-        page.goto(url)
-        page.wait_for_function(READY, timeout=30000)
-        opening = page.locator(".dk-stage").screenshot()
+        page = open_page(browser, url, reduced_motion="reduce")
+        opening = shoot(page)
         page.close()
 
         # The card: the default run with a ring around Prague, on CARD_DAY, paused there.
-        page = browser.new_page(viewport=VIEWPORT, device_scale_factor=SCALE)
-        page.goto(url)
-        page.wait_for_function(READY, timeout=30000)
+        page = open_page(browser, url)
         page.get_by_role("button", name="Pause").click()
         draw_ring(page)
         page.get_by_role("button", name="Play").click()
@@ -128,14 +151,16 @@ def main():
         page.get_by_role("button", name="Pause").click()
         page.wait_for_timeout(300)
         status = page.locator(".dk-status").text_content()
-        card = page.locator(".dk-stage").screenshot()
+        card = shoot(page)
         browser.close()
     server.shutdown()
 
     print(f"card: {re.sub(r'\\s+', ' ', status)}")
-    save(fit(opening, 1200, 675), "static.webp", "WEBP", None, method=6)
-    save(fit(card, 1200, 675), "thumb.webp", "WEBP", 80_000, method=6)
-    save(fit(card, 1200, 630), "og.jpg", "JPEG", 150_000, optimize=True, progressive=True)
+    for theme in THEMES:
+        suffix = "" if theme == "dark" else "-light"
+        save(fit(opening[theme], 1200, 675, theme), f"static{suffix}.webp", "WEBP", None, method=6)
+        save(fit(card[theme], 1200, 675, theme), f"thumb{suffix}.webp", "WEBP", 80_000, method=6)
+    save(fit(card["dark"], 1200, 630, "dark"), "og.jpg", "JPEG", 150_000, optimize=True, progressive=True)
 
 
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ const handlers = {
   advance: ({ days }) => (engine.advance(days), engine.frame()),
   trace: ({ days, every }) => engine.trace(days, every),
   repaint: () => engine.frame(),
-  probe: ({ cell }) => engine.probe(cell),
 };
 
 self.onmessage = ({ data }) => {
