@@ -17,7 +17,7 @@ npx demo-kit validate dist/
 npx vite preview            # serves dist/ at http://localhost:4173
 ```
 
-The release workflow zips `dist/` as `demo-<slug>.zip` and attaches it to the GitHub release. For the bundle contract and the kit's API, see the [demo-kit README](https://github.com/Mark-Bugden/demo-kit#readme).
+To release a change, bump `version` in `package.json` in its PR (CI fails if the demo changed and that version is already released). When the PR merges, the Demo workflow builds the bundle, sets the manifest's `built` to that day, releases it as `v<version>` with `dist/` zipped as `demo-<slug>.zip`, and starts the site's build, which puts it live. For the bundle contract and the kit's API, see the [demo-kit README](https://github.com/Mark-Bugden/demo-kit#readme).
 
 The files to edit:
 

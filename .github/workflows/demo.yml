@@ -1,35 +1,93 @@
 name: Demo
 
+# Pull requests: build and validate the bundle, and fail if the PR changes the demo without a new
+# version in demo/package.json. Pushes to main: if that version is not released yet, release it as
+# v<version> with demo-<slug>.zip attached, then start the site's Pages workflow, so the demo goes
+# live a few minutes after its PR merges.
 on:
   pull_request:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: demo-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   demo:
     name: Build, validate and release the demo bundle
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # creates the release on tag pushes
+      contents: write   # creates the release and its tag
     defaults:
       run:
         working-directory: demo
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2   # on a pull request, HEAD^1 is the base branch
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: demo/package-lock.json
+
+      - name: Read the version
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Everything under demo/ except tests and Markdown goes into the bundle.
+      - name: Check that a changed demo has a new version
+        if: github.event_name == 'pull_request' && steps.version.outputs.released == 'true'
+        run: |
+          if ! git diff --quiet HEAD^1 HEAD -- . ':(exclude)test' ':(exclude)*.md'; then
+            echo "::error file=demo/package.json::This PR changes the demo, but v${{ steps.version.outputs.version }} is already released. Bump version in demo/package.json."
+            exit 1
+          fi
+
       - run: npm ci
       - run: npm run build
+
+      - name: Set the manifest's built date to today
+        if: github.event_name != 'pull_request' && steps.version.outputs.released == 'false'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('dist/manifest.json', 'utf8'));
+            manifest.built = new Date().toISOString().slice(0, 10);
+            fs.writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2) + '\n');
+          "
+
       - run: npx demo-kit validate dist/
-      - name: Attach demo-<slug>.zip to the release
-        if: github.ref_type == 'tag'
+
+      - name: Release v${{ steps.version.outputs.version }} with demo-<slug>.zip
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.version.outputs.released == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          slug=$(node -p "require('./public/manifest.json').slug")
+          slug=$(node -p "require('./dist/manifest.json').slug")
           (cd dist && zip -r "../demo-$slug.zip" .)
-          gh release create "$GITHUB_REF_NAME" "demo-$slug.zip" --repo "$GITHUB_REPOSITORY" \
-            --title "$GITHUB_REF_NAME" --notes "Demo bundle for the site: demo-$slug.zip"
+          gh release create "v$VERSION" "demo-$slug.zip" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "v$VERSION" --notes "Demo bundle for the site: demo-$slug.zip"
+
+      # SITE_DEPLOY_TOKEN: a fine-grained token for Mark-Bugden.github.io only, with Actions read and
+      # write. Without it, the site's daily build picks the release up instead.
+      - name: Start the site's Pages workflow
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.version.outputs.released == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::SITE_DEPLOY_TOKEN is not set, so the site will pick up this release at its next daily build."
+            exit 0
+          fi
+          gh workflow run pages.yml --repo Mark-Bugden/Mark-Bugden.github.io --ref main
