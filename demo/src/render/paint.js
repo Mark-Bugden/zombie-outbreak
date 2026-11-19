@@ -2,12 +2,13 @@
 // only the finished image crosses to the main thread. No DOM access.
 //
 // "The lights go out": each Czech cell starts from the land colour, adds light for its humans (log
-// scale, sodium amber rising to white in the densest cores), and adds the stronger of two layers:
+// scale, the people's colour rising to white in the densest cores), and adds the stronger of two
+// layers:
 // - the fallen: zombies and the dead together, log-scaled like the people, in a colour mixed from
-//   red (zombies) and ash (the dead) by their shares, so a cell with more dead than zombies looks
-//   more ash than red
-// - the front: a bright red, rising to white, for where bites are happening now (β S Z).
-// In the light theme the same arithmetic darkens pale paper with ochre ink, red and charcoal instead.
+//   the zombies' colour and the dead's by their shares, so a cell with more dead than zombies looks
+//   more like the dead
+// - the front: the zombies' colour, rising to white, for where bites are happening now (β S Z).
+// In the light theme the same arithmetic darkens pale paper instead, rising to deeper shades.
 
 import { NEIGHBOUR_BASE } from '../grid.js';
 import { pack, parseHex, ramp, rampIndex } from './colour.js';

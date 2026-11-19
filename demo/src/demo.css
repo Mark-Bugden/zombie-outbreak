@@ -1,22 +1,20 @@
 /*
- * The map colours the kit has no tokens for (see readColours in src/render/map.js):
- * - people: city lights in sodium amber on dark, rising to white in the densest cores; ochre ink on
- *   light, rising to dark brown, so that nothing alive looks like the dead
- * - the front, where bites are happening now: H-alpha red rising to white on dark, to dark red on light
+ * People take the kit's main highlight (--color-accent) and zombies its contrasting one
+ * (--color-accent-2); see readColours in src/render/map.js. The map colours the kit has no tokens for:
+ * - the densest cores of people, and the front at its strongest, where bites are happening now:
+ *   white on dark; on light, a deeper shade of the same hue
  * - the dead: ash grey on dark, charcoal ink on light.
  * Dark is the default, as in the kit: light applies only under <html data-theme="light">.
  */
 [data-demo] {
-  --zo-people: var(--color-sodium);
   --zo-people-peak: var(--color-text);
   --zo-front-peak: var(--color-text);
   --zo-dead: #9aa6b8;
 }
 
 :root[data-theme="light"] [data-demo] {
-  --zo-people: #b8860b;
-  --zo-people-peak: #5c3d0a;
-  --zo-front-peak: #6e1606;
+  --zo-people-peak: #0f253f;
+  --zo-front-peak: #2d5923;
   --zo-dead: #2f3642;
 }
 
@@ -84,7 +82,7 @@
   font-weight: var(--weight-strong);
   text-align: center;
   background: var(--color-surface);
-  border: 1px solid var(--color-halpha);
+  border: 1px solid var(--color-accent-2);
   border-radius: var(--radius-pill);
   transform: translateX(-50%);
   cursor: default;

@@ -12,9 +12,9 @@ export function readColours(token) {
   return {
     night: token('--color-bg'),
     land: token('--color-surface'),
-    people: token('--zo-people'),
+    people: token('--color-accent'),
     peoplePeak: token('--zo-people-peak'),
-    zombie: token('--color-halpha'),
+    zombie: token('--color-accent-2'),
     frontPeak: token('--zo-front-peak'),
     dead: token('--zo-dead'),
     region: token('--color-border'),
