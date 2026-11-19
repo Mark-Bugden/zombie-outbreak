@@ -203,6 +203,29 @@ Split into three PRs, like step 3.
 - [x] Separate PR on demo-kit, done by another agent: the site's redesign tokens and fonts, dark as the default, and the tokens this demo's map needs (`--color-curve`, `--color-sodium`, `--color-halpha`).
 - [x] Bump this demo to it. The map's colours now come from the kit's tokens, and its pixels are unchanged apart from the stage's rounded corners.
 
+### 6. Improvements after v1.0.0: release `v1.1.0`
+Agreed with Mark on 2026-11-19. Copy edits and better thumbnails come after this, in a later round.
+
+**6a. The demo (PR)**
+- [x] **Layout.** The chart moves out of the map's corner to a full-width panel above the map. The map takes the frame's full width too, in the map's own shape, up to the manifest's height (now 620 px). The controls go below the transport and status line, in a row, on every width. The chart now shows on phones as well.
+- [x] **The chart as a timeline.** Days 0 to 365 across the full width, with gridlines, day labels, a line for today and a dashed line for the detection day. It shows the true numbers from day 0, even before detection; the map, the status line and the hover readout stay hidden until then.
+- [x] **Detection.** Tools stay unlocked before detection, and the run doesn't pause (Mark, 2026-11-19). On detection, a notice over the map says "Infection detected. Build blockades to stop the spread of infection." (Mark's wording).
+- [x] **Wording.** "Cordon" becomes "blockade" in everything visitors read: the controls, the status line, the manifest and the write-up. The code keeps `cordon`.
+- [x] **The dead get a colour.** Zombies and the dead are painted together, in a colour mixed from red and grey by their shares, so a city with more dead than zombies looks grey. Dark: ash grey (`#9aa6b8`). Light: charcoal (`#2f3642`); people become ochre ink instead of slate, rising to dark brown rather than black, and the front deepens to dark red rather than black, so that nothing alive looks dead. The chart's dead line takes the same grey.
+  - The agreed ochre was `#b07a1a`. The palette check put it too close to H-alpha red (ΔE 14.1, and 6.9 for deuteranopes), so it is `#b8860b` (ΔE 17.1 and 10.3).
+- [x] **Hover readout.** The region under the pointer, with its totals: humans, zombies and dead (before detection, its people at the start). This replaces the per-km² readout.
+- Proposed in 6a, not yet agreed:
+  - pointing at a region outlines it, which also shows what a click would seal
+  - pointing at the chart reads off any day so far, with a crosshair and a tooltip
+  - the dashed no-quarantine line shows only once something is planned, since until then it is the same run
+  - the notice goes after 8 seconds, on a click, or when a blockade or seal is added.
+
+**6b. Light and dark images (kit `v0.3.0`, site, demo)**
+- [ ] demo-kit `v0.3.0`: the bundle contract allows two optional files, `thumb-light.webp` and `static-light.webp`, for the light theme, and the validator checks them.
+- [ ] The site: the project card and the demo's loading still use the light image under the light theme, when the bundle has one; the site's validator moves to kit `v0.3.0`.
+- [ ] This demo: bump the kit, and render both themes' stills (`og.jpg` stays single, since link previews have no theme).
+- [ ] Release `v1.1.0`, then Mark bumps the tag in the site's `data/projects.yaml`.
+
 ## Open questions
 
 - **Munz parameters.** The paper uses counts in a well-mixed population of 500, so converting them to density units is a judgement call. The write-up should say so.

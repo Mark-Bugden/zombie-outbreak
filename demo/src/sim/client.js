@@ -42,6 +42,5 @@ export function createClient() {
     advance: (days, spare) => call('advance', { days, spare }),
     trace: (days, every) => call('trace', { days, every }),
     repaint: (spare) => call('repaint', { spare }),
-    probe: (cell) => call('probe', { cell }),
   };
 }

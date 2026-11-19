@@ -1,6 +1,6 @@
 # Quantifying the Quarantine
 
-A zombie outbreak on a population map of Czechia, one square kilometre to a pixel. The outbreak starts in Prague, Brno or Ostrava. Nobody notices it for a week. Then one crew starts building whatever cordons you have drawn, and the demo counts how many people that saves compared with doing nothing.
+A zombie outbreak on a population map of Czechia, one square kilometre to a pixel. The outbreak starts in Prague, Brno or Ostrava. Nobody notices it for a week. Then one crew starts building whatever blockades you have drawn, and the demo counts how many people that saves compared with doing nothing.
 
 ## The model
 
@@ -18,7 +18,7 @@ Three choices shape what happens.
 
 - **Densities.** S, Z and R are people per square kilometre, and encounters are mass action (βSZ), so crowded places fall faster. In Prague's most crowded square kilometre, about 4,900 people, one zombie bites about 46 people a day at the paper's rate. Cities fall within days; the countryside holds out for weeks.
 - **Movement.** Zombies wander at random (diffusion, D). Humans flee from squares where zombies are a larger share of everyone walking around (χ). Using the share rather than the number of zombies keeps the flight bounded however dense the zombies get.
-- **A cutoff.** In a square kilometre with fewer than one zombie, zombies can't bite. Without this, the equations spread tiny fractions of a zombie everywhere, those fractions grow, and no cordon could hold: a thousandth of a zombie would seep through any gap and start again on the other side. Brunet and Derrida (1997) studied this kind of cutoff for spreading fronts. It stands in for the fact that zombies come whole.
+- **A cutoff.** In a square kilometre with fewer than one zombie, zombies can't bite. Without this, the equations spread tiny fractions of a zombie everywhere, those fractions grow, and no blockade could hold: a thousandth of a zombie would seep through any gap and start again on the other side. Brunet and Derrida (1997) studied this kind of cutoff for spreading fronts. It stands in for the fact that zombies come whole.
 
 The strains are illustrative settings, not estimates. *Munz et al. (2009)* uses the paper's rates (β = 0.0095, α = 0.005, ζ = 0.0001), reading its population of 500 as 500 people per square kilometre. That reading is a judgement call: the paper counts people in a well-mixed group, not per area. *Shamblers* are slower, *Frenzied* are faster, and *Risers* lose most fights but rise again within days.
 
@@ -30,9 +30,9 @@ The population is WorldPop's 2020 estimate for the Czech Republic at 30 arc-seco
 
 ## The quarantine
 
-The outbreak is hidden until day 7: until then the map shows nothing amiss. You can plan at any time, by drawing cordons freehand or by sealing whole regions, but one crew builds everything, in the order you planned it, at 40 km a day from day 7.
+The outbreak is hidden until day 7: until then the map shows nothing amiss. You can plan at any time, by drawing blockades freehand or by sealing whole regions, but one crew builds everything, in the order you planned it, at 40 km a day from day 7.
 
-On the grid, people and zombies move between neighbouring squares across the edge they share. So a cordon is a chain of square edges, and each edge is 1 km of fence. A freehand stroke is snapped onto the grid lines, so it has no gaps, and nothing crosses it once it's built. Sealing a region closes its borders with the other regions, but not its national border: zombies that cross into Germany, Poland, Austria or Slovakia leave the model, counted as exported.
+On the grid, people and zombies move between neighbouring squares across the edge they share. So a blockade is a chain of square edges, and each edge is 1 km of fence. A freehand stroke is snapped onto the grid lines, so it has no gaps, and nothing crosses it once it's built. Sealing a region closes its borders with the other regions, but not its national border: zombies that cross into Germany, Poland, Austria or Slovakia leave the model, counted as exported.
 
 The same outbreak with no quarantine runs alongside, which is how the demo knows how many people your quarantine saved. It also counts the people you sealed in: those inside an area cut off from the rest of the country while it held zombies able to bite, at the moment it closed.
 

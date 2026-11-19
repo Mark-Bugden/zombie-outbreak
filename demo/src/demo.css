@@ -1,22 +1,104 @@
 /*
- * The one map colour the kit has no token for: people, which are city lights in sodium amber on
- * dark, and ink on light. The map's other colours are the kit's tokens (see readColours in
- * src/render/map.js). Dark is the default, as in the kit: light applies only under
- * <html data-theme="light">.
+ * The map colours the kit has no tokens for (see readColours in src/render/map.js):
+ * - people: city lights in sodium amber on dark, rising to white in the densest cores; ochre ink on
+ *   light, rising to dark brown, so that nothing alive looks like the dead
+ * - the front, where bites are happening now: H-alpha red rising to white on dark, to dark red on light
+ * - the dead: ash grey on dark, charcoal ink on light.
+ * Dark is the default, as in the kit: light applies only under <html data-theme="light">.
  */
 [data-demo] {
   --zo-people: var(--color-sodium);
+  --zo-people-peak: var(--color-text);
+  --zo-front-peak: var(--color-text);
+  --zo-dead: #9aa6b8;
 }
 
 :root[data-theme="light"] [data-demo] {
-  --zo-people: var(--color-muted);
+  --zo-people: #b8860b;
+  --zo-people-peak: #5c3d0a;
+  --zo-front-peak: #6e1606;
+  --zo-dead: #2f3642;
+}
+
+/*
+ * The layout: the chart above the map, both the frame's full width, then the transport and status
+ * line, then the controls. The kit puts the controls in a rail beside the stage on wide frames and
+ * above it on narrow ones; here they go below on every width.
+ */
+@container (min-width: 48rem) {
+  [data-demo] .dk-body:not(.dk-body-full) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+[data-demo] .dk-rail {
+  order: 1;
+}
+
+/*
+ * The map's stage takes the map's shape (511 × 319 km, plus the map's padding) at the frame's full
+ * width (100cqw: the frame is the kit's query container), up to the manifest's height.
+ */
+[data-demo] .dk-stage {
+  height: min(var(--dk-stage-height), 100cqw * 343 / 535);
+  aspect-ratio: auto;
+}
+
+[data-demo] .zo-chart {
+  display: block;
+  width: 100%;
+  height: 180px;
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  touch-action: pan-y;
+}
+
+@container (max-width: 47.99rem) {
+  [data-demo] .zo-chart {
+    height: 160px;
+  }
+}
+
+/* The notice when the outbreak is detected, over the top of the map. A click dismisses it. */
+[data-demo] .zo-notice {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--space-3));
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-halpha);
+  border-radius: var(--radius-pill);
+  transform: translateX(-50%);
+  cursor: default;
+}
+
+@container (max-width: 47.99rem) {
+  [data-demo] .zo-notice {
+    top: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    border-radius: var(--radius-md);
+  }
+}
+
+[data-demo] .zo-notice[hidden] {
+  display: none;
 }
 
 [data-demo] .dk-stage-content {
   touch-action: manipulation;
 }
 
-/* While "Draw cordon" is on, the map takes touches as strokes instead of scrolling the page. */
+/* While "Draw blockade" is on, the map takes touches as strokes instead of scrolling the page. */
 [data-demo] .dk-stage-content.zo-drawing {
   touch-action: none;
   cursor: crosshair;

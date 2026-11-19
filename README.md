@@ -1,10 +1,10 @@
 # Quantifying the Quarantine
 
-A simulation of a zombie outbreak across a real population map of Czechia, with quarantine tools. Visitors pick a city and a zombie strain, then draw cordons and seal regions to stop the outbreak. The demo reports how many people the quarantine saved compared with doing nothing.
+A simulation of a zombie outbreak across a real population map of Czechia, with quarantine tools. Visitors pick a city and a zombie strain, then draw blockades and seal regions to stop the outbreak. The demo reports how many people the quarantine saved compared with doing nothing.
 
 The model is the humans–zombies–removed (SZR) model of Munz et al. (2009), run as a reaction-diffusion system on a 1 km population grid.
 
-**Status:** live from `v1.0.0`. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw cordons and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md), and the draft write-up is in [docs/writeup.md](docs/writeup.md).
+**Status:** live from `v1.0.0`. The demo runs the outbreak, hidden until it is detected, with the quarantine tools: draw blockades and seal regions, and one crew builds them. When the run ends, a summary compares it with the same outbreak with no quarantine. The plan, design decisions and milestones are in [docs/plan.md](docs/plan.md), and the draft write-up is in [docs/writeup.md](docs/writeup.md).
 
 ## Repository layout
 

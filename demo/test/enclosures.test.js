@@ -98,7 +98,7 @@ test('frames report the sealed in and the exports, and trace() samples a run wit
   assert.ok(samples.every((s) => 'humans' in s.totals));
   assert.equal(engine.setParams(params), samples.at(-1).day);
 
-  engine.setColours({ night: '#000000', land: '#111111', people: '#ffaa00', peak: '#ffffff', zombie: '#cc3311' });
+  engine.setColours({ night: '#000000', land: '#111111', people: '#ffaa00', peoplePeak: '#ffffff', zombie: '#cc3311', frontPeak: '#ffffff', dead: '#999999' });
   const frame = engine.frame();
   assert.ok(frame.sealedIn > 1500 && frame.sealedIn <= 1600, `walled in when the ring closed: ${frame.sealedIn}`);
   assert.deepEqual(frame.exports, []);

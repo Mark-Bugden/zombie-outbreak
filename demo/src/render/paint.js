@@ -2,18 +2,18 @@
 // only the finished image crosses to the main thread. No DOM access.
 //
 // "The lights go out": each Czech cell starts from the land colour, adds light for its humans (log
-// scale, sodium amber rising to white in the densest cores), and adds the stronger of two zombie
-// layers:
-// - embers: a steady red for the zombies holding the cell
+// scale, sodium amber rising to white in the densest cores), and adds the stronger of two layers:
+// - the fallen: zombies and the dead together, log-scaled like the people, in a colour mixed from
+//   red (zombies) and ash (the dead) by their shares, so a cell with more dead than zombies looks
+//   more ash than red
 // - the front: a bright red, rising to white, for where bites are happening now (β S Z).
-// The dead add nothing, so a burnt-out cell goes dark. In the light theme the same arithmetic
-// darkens pale paper with ink and red instead.
+// In the light theme the same arithmetic darkens pale paper with ochre ink, red and charcoal instead.
 
 import { NEIGHBOUR_BASE } from '../grid.js';
 import { pack, parseHex, ramp, rampIndex } from './colour.js';
 
-// How strongly zombies holding a cell show, at the most crowded cell's density.
-const EMBERS = 0.85;
+// How strongly the fallen (zombies and dead) show, at the most crowded cell's density.
+const FALLEN = 0.85;
 // The front's brightness scale: bites per km² per day, log-scaled like the people, doubled.
 const FRONT = 2;
 
@@ -27,8 +27,10 @@ export function createPainter({ labels, population }) {
   let night = 0;
   let humans = null; // the ramp's colours minus land, r, g, b per entry
   let embers = null;
+  let ash = null;
   let front = null;
-  let embersWeight = null; // how far each entry is from land, to pick the stronger zombie layer
+  let embersWeight = null; // how far each entry is from land, to pick the stronger layer
+  let ashWeight = null;
   let frontWeight = null;
 
   const deltas = (table) => {
@@ -43,14 +45,16 @@ export function createPainter({ labels, population }) {
   };
 
   return {
-    /** Colours as hex strings: { night, land, people, peak, zombie }. */
+    /** Colours as hex strings: { night, land, people, peoplePeak, zombie, frontPeak, dead }. */
     setColours(colours) {
       land = parseHex(colours.land);
       night = pack(parseHex(colours.night));
-      humans = deltas(ramp([[0, colours.land], [0.9, colours.people], [1, colours.peak]]));
+      humans = deltas(ramp([[0, colours.land], [0.9, colours.people], [1, colours.peoplePeak]]));
       embers = deltas(ramp([[0, colours.land], [1, colours.zombie]]));
-      front = deltas(ramp([[0, colours.land], [0.7, colours.zombie], [1, colours.peak]]));
+      ash = deltas(ramp([[0, colours.land], [1, colours.dead]]));
+      front = deltas(ramp([[0, colours.land], [0.7, colours.zombie], [1, colours.frontPeak]]));
       embersWeight = weights(embers);
+      ashWeight = weights(ash);
       frontWeight = weights(front);
     },
 
@@ -58,8 +62,8 @@ export function createPainter({ labels, population }) {
       return land !== null;
     },
 
-    /** Paints every cell into `out` (a Uint32Array view of RGBA pixels) from S and Z, with bite rate β. */
-    paint(out, S, Z, beta) {
+    /** Paints every cell into `out` (a Uint32Array view of RGBA pixels) from S, Z and R, with bite rate β. */
+    paint(out, S, Z, R, beta) {
       for (let i = 0; i < out.length; i++) {
         if (labels[i] >= NEIGHBOUR_BASE) {
           out[i] = night;
@@ -67,24 +71,28 @@ export function createPainter({ labels, population }) {
         }
         const s = S[i];
         const z = Z[i];
+        const fallen = z + R[i];
         const h = rampIndex(Math.log1p(s) / logPeak) * 3;
         let r = land[0] + humans[h];
         let g = land[1] + humans[h + 1];
         let b = land[2] + humans[h + 2];
-        if (z > 0) {
-          const e = rampIndex((EMBERS * Math.log1p(z)) / logPeak);
-          const f = rampIndex((FRONT * Math.log1p(beta * s * z)) / logPeak);
-          if (frontWeight[f] > embersWeight[e]) {
+        if (fallen > 0) {
+          const e = rampIndex((FALLEN * Math.log1p(fallen)) / logPeak);
+          const f = z > 0 ? rampIndex((FRONT * Math.log1p(beta * s * z)) / logPeak) : 0;
+          const red = z / fallen; // the zombies' share; the rest are dead
+          if (frontWeight[f] > red * embersWeight[e] + (1 - red) * ashWeight[e]) {
             r += front[f * 3];
             g += front[f * 3 + 1];
             b += front[f * 3 + 2];
           } else {
-            r += embers[e * 3];
-            g += embers[e * 3 + 1];
-            b += embers[e * 3 + 2];
+            const k = e * 3;
+            r += red * embers[k] + (1 - red) * ash[k];
+            g += red * embers[k + 1] + (1 - red) * ash[k + 1];
+            b += red * embers[k + 2] + (1 - red) * ash[k + 2];
           }
         }
-        // pack(), inlined: this loop runs for every cell on every frame.
+        // pack(), inlined: this loop runs for every cell on every frame. The mixed layer leaves
+        // fractions, which the shift below truncates.
         r = r < 0 ? 0 : r > 255 ? 255 : r;
         g = g < 0 ? 0 : g > 255 ? 255 : g;
         b = b < 0 ? 0 : b > 255 ? 255 : b;

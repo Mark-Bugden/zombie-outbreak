@@ -7,14 +7,16 @@ import { NEIGHBOUR_BASE } from '../grid.js';
 // Space around the map inside the stage, in CSS pixels.
 const PADDING = 12;
 
-/** The map's colours for the current theme, from the kit's tokens and the demo's --zo-people (demo.css). */
+/** The map's colours for the current theme, from the kit's tokens and the demo's --zo-* (demo.css). */
 export function readColours(token) {
   return {
     night: token('--color-bg'),
     land: token('--color-surface'),
     people: token('--zo-people'),
-    peak: token('--color-text'),
+    peoplePeak: token('--zo-people-peak'),
     zombie: token('--color-halpha'),
+    frontPeak: token('--zo-front-peak'),
+    dead: token('--zo-dead'),
     region: token('--color-border'),
     nation: token('--color-curve'),
   };
@@ -62,6 +64,19 @@ export function borderSegments(labels, width, height) {
   return { region, nation };
 }
 
+/** The cell edges around every cell labelled `id`, as [x1, y1, x2, y2] segments in cell units. */
+export function outlineSegments(labels, width, height, id) {
+  const segments = [];
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const inside = labels[row * width + col] === id;
+      if (col > 0 && inside !== (labels[row * width + col - 1] === id)) segments.push([col, row, col, row + 1]);
+      if (row > 0 && inside !== (labels[(row - 1) * width + col] === id)) segments.push([col, row, col + 1, row]);
+    }
+  }
+  return segments;
+}
+
 /** The scale and offset that fit a grid of cells inside a box, centred with PADDING around it. */
 export function fit(gridWidth, gridHeight, boxWidth, boxHeight, padding = PADDING) {
   const scale = Math.max(0, Math.min((boxWidth - 2 * padding) / gridWidth, (boxHeight - 2 * padding) / gridHeight));
@@ -88,6 +103,7 @@ export function createMap(grid) {
   const context = canvas.getContext('2d');
   const segments = borderSegments(labels, width, height);
   const paths = { region: toPath(segments.region), nation: toPath(segments.nation) };
+  const outlines = new Map(); // label → the outline of its cells, made when first needed
   let colours = null;
   let painted = false;
   let view = { scale: 1, x: 0, y: 0 };
@@ -128,6 +144,12 @@ export function createMap(grid) {
       ctx.stroke(paths.nation);
       overlay?.(ctx, view.scale);
       ctx.restore();
+    },
+
+    /** The outline of the cells labelled `id` (a region), as a path in cell units. */
+    outline(id) {
+      if (!outlines.has(id)) outlines.set(id, toPath(outlineSegments(labels, width, height, id)));
+      return outlines.get(id);
     },
 
     /** CSS pixels per cell, as last drawn. */

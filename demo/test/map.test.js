@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { pack, parseHex, ramp, rampIndex } from '../src/render/colour.js';
-import { borderSegments, fit } from '../src/render/map.js';
+import { borderSegments, fit, outlineSegments } from '../src/render/map.js';
 
 test('parses hex colours', () => {
   assert.deepEqual(parseHex('#f6be55'), [246, 190, 85]);
@@ -44,4 +44,16 @@ test('traces region and national borders along cell edges, merging runs', () => 
 test('fits the grid inside the stage, centred', () => {
   assert.deepEqual(fit(100, 50, 224, 224, 12), { scale: 2, x: 12, y: 62 });
   assert.equal(fit(100, 50, 10, 10, 12).scale, 0);
+});
+
+test('outlines the cells of one region', () => {
+  // 4 × 3 cells: region 2 is an L of three cells in the top-right corner.
+  const labels = Uint8Array.from([
+    1, 1, 2, 2,
+    1, 1, 1, 2,
+    1, 1, 1, 1,
+  ]);
+  const segments = outlineSegments(labels, 4, 3, 2);
+  // Its outline inside the grid: four edges facing region 1 (the grid's own edge is not traced).
+  assert.deepEqual(segments.sort(), [[2, 0, 2, 1], [2, 1, 3, 1], [3, 1, 3, 2], [3, 2, 4, 2]].sort());
 });
