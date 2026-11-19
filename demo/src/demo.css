@@ -98,7 +98,7 @@
   touch-action: manipulation;
 }
 
-/* While "Draw blockade" is on, the map takes touches as strokes instead of scrolling the page. */
+/* While "Manual blockades" is on, the map takes touches as strokes instead of scrolling the page. */
 [data-demo] .dk-stage-content.zo-drawing {
   touch-action: none;
   cursor: crosshair;
@@ -109,9 +109,16 @@
   cursor: pointer;
 }
 
-/* Groups of controls: the quarantine tools, and the model's parameters (Advanced), folded away by default. */
+/*
+ * Advanced, folded away by default: the Manual blockades toggle, then the model's rates. It takes
+ * the controls' whole width, under the other settings, with the rates side by side.
+ */
 [data-demo] .zo-group {
   gap: var(--space-4);
+}
+
+[data-demo] .dk-rail > details.zo-group {
+  grid-column: 1 / -1;
 }
 
 [data-demo] .zo-group > summary {
@@ -121,6 +128,13 @@
 
 [data-demo] details.zo-group:not([open]) {
   gap: 0;
+}
+
+[data-demo] .zo-rates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  align-items: end; /* a label that wraps to two lines keeps its slider in line with the others */
+  gap: var(--space-4) var(--space-5);
 }
 
 /* The end summary, under the map: four numbers, two by two on narrow frames. */

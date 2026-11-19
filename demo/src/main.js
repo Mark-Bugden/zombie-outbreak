@@ -5,10 +5,10 @@
 // them when the last frame is back, and draws the newest frame with the borders and the quarantine
 // on top, and the chart above the map.
 //
-// The quarantine: blockades drawn on the map and sealed regions join one build queue (sim/crew.js).
-// In the code they are cordons. This thread keeps a copy of the queue to draw it; the worker's copy
-// blocks each edge once it is built. Until the detection day the outbreak is hidden on the map, in
-// the status line and in the hover readout, here as in the worker; the chart shows the truth all along.
+// The quarantine: regions sealed with a click, and blockades drawn on the map (Manual blockades,
+// under Advanced), join one build queue (sim/crew.js). In the code, blockades are cordons. This
+// thread keeps a copy of the queue to draw it; the worker's copy blocks each edge once it is built.
+// The crew starts on the detection day, but the outbreak is shown as it is from day 0.
 //
 // The baseline, the same outbreak with no quarantine, runs ahead in a second worker
 // (sim/baseline.js), for the chart's faint line and the end summary's "saved".
@@ -18,7 +18,7 @@ import { getTheme, mount, select, slider, toggle, token } from '@mark-bugden/dem
 import '@mark-bugden/demo-kit/tokens.scoped.css';
 import '@mark-bugden/demo-kit/frame.css';
 import './demo.css';
-import { actions, chooser, group } from './controls.js';
+import { group } from './controls.js';
 import { NEIGHBOUR_BASE, loadGrid } from './grid.js';
 import { SAMPLE_DAYS, compact, createHistory, drawChart } from './render/chart.js';
 import { drawCordons } from './render/cordons.js';
@@ -41,9 +41,9 @@ const CUSTOM = 'custom';
 const SNAP = { mouse: 14, pen: 14, touch: 24 };
 // For this many days after detection, the status line says the outbreak has been detected.
 const NEWS_DAYS = 6;
-// The notice on the map when the outbreak is detected, and how long it stays, in ms.
-const NOTICE = 'Infection detected. Build blockades to stop the spread of infection.';
-const NOTICE_TIME = 8000;
+// The notice on the map when the outbreak is detected. It stays until the first blockade or seal,
+// a click on it, or a new run.
+const NOTICE = 'Infection detected. Click on a region to build blockades and try to stop the spread.';
 // How long the Advanced sliders must rest, in ms, before the baseline re-runs with their change.
 const SETTLE = 400;
 const number = new Intl.NumberFormat('en-GB');
@@ -53,13 +53,11 @@ const strain = select({
   label: 'Strain',
   options: [...STRAINS.map(({ label, key }) => ({ label, value: key })), { label: 'Custom', value: CUSTOM }],
 });
-const speed = select({ label: 'Speed', options: [{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '4×', value: 4 }] });
+const speed = select({ label: 'Speed', options: [{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '4×', value: 4 }], value: 2 });
 const sliders = Object.fromEntries(SLIDERS.map(({ name, ...spec }) => [name, slider({ ...spec, value: STRAINS[0].params[name] })]));
-const advanced = group('Advanced', sliders, { collapsible: true });
-const draw = toggle({ label: 'Draw blockade' });
-const seal = chooser({ label: 'Seal a region', prompt: 'Choose a region' });
-const edit = actions([{ name: 'undo', label: 'Undo' }, { name: 'clear', label: 'Clear' }]);
-const quarantine = group('Quarantine', { draw, seal, edit });
+const rates = group(null, sliders, { className: 'zo-rates' }); // the model's rates: their value is the parameters
+const draw = toggle({ label: 'Manual blockades' });
+const advanced = group('Advanced', { draw, rates }, { collapsible: true });
 
 let grid = null;
 let map = null;
@@ -73,8 +71,6 @@ let owed = 0; // simulated days the animation clock has run ahead of the worker
 let run = 0; // counts runs, so frames from a run that has been replaced are dropped
 let hoverCell = -1;
 let chartPointer = null; // the x of a pointer over the chart, in CSS pixels
-let regionPeople = null; // each region's people at the start, by label - 1
-let noticeTimer = 0;
 let queue = null; // this thread's copy of the build queue
 let stroke = null; // the cordon being drawn: [[x, y], ...] in cell units
 let strokeReach = SNAP.mouse; // its snapping distance, in CSS pixels
@@ -85,7 +81,7 @@ let job = null; // the baseline's run: { cell, zombies, schedule: [{ day, params
 let settling = 0; // the timer that re-runs the baseline after a slider change
 const history = createHistory();
 
-const params = () => ({ ...advanced.value, ...FIXED });
+const params = () => ({ ...rates.value, ...FIXED });
 const takeSpare = () => {
   const buffer = spare;
   spare = null;
@@ -95,7 +91,7 @@ const takeSpare = () => {
 const app = mount({
   el: document.querySelector(`[data-demo="${manifest.slug}"]`),
   manifest,
-  controls: { scenario, strain, speed, quarantine, advanced },
+  controls: { scenario, strain, speed, advanced },
   stage: 'canvas',
   animate: true,
   reset: () => startRun(),
@@ -177,12 +173,9 @@ function paintChart(pixelRatio) {
 function showNotice() {
   notice.textContent = NOTICE;
   notice.hidden = false;
-  clearTimeout(noticeTimer);
-  noticeTimer = setTimeout(hideNotice, NOTICE_TIME);
 }
 
 function hideNotice() {
-  clearTimeout(noticeTimer);
   notice.hidden = true;
 }
 
@@ -276,7 +269,6 @@ function cordonStatus(detected) {
 function liveStatus() {
   if (!latest) return 'Starting the outbreak…';
   const { day, totals, ended, detected } = latest;
-  if (!detected) return `Day ${Math.floor(day)}: no outbreak detected yet.${cordonStatus(false)}`;
   const base = queue.total > 0 ? baseline.at(day) : null;
   const gap = base ? totals.humans - base.humans : 0;
   const versus = Math.abs(gap) >= 1 ? ` (${compact(Math.abs(gap))} ${gap > 0 ? 'more' : 'fewer'} than with no quarantine)` : '';
@@ -286,8 +278,8 @@ function liveStatus() {
     const how = totals.zombies === 0 ? 'The outbreak died out' : 'The run ended';
     return `${how} on day ${Math.round(day)}: ${counts}${crossed}.${cordonStatus(true)} Press Reset to run it again.`;
   }
-  const news = day < DETECTION_DAY + NEWS_DAYS ? 'outbreak detected. ' : '';
-  return `Day ${Math.floor(day)}: ${news}${counts}${crossed}.${cordonStatus(true)}`;
+  const news = !detected ? 'outbreak not yet detected. ' : day < DETECTION_DAY + NEWS_DAYS ? 'outbreak detected. ' : '';
+  return `Day ${Math.floor(day)}: ${news}${counts}${crossed}.${cordonStatus(detected)}`;
 }
 
 const regionName = (region) => (region.code === 'CZ-PR' ? region.nameEn : `${region.nameEn} Region`);
@@ -295,12 +287,12 @@ const regionName = (region) => (region.code === 'CZ-PR' ? region.nameEn : `${reg
 /** The region under the pointer, by label, or 0 when the pointer isn't over Czechia (or is drawing). */
 const hoverRegion = () => (hoverCell >= 0 && !draw.value && !stroke && grid.labels[hoverCell] < NEIGHBOUR_BASE ? grid.labels[hoverCell] : 0);
 
-/** The readout for the region (or country) of one cell. Before detection it shows only who lived there. */
+/** The readout for the region (or country) of one cell. */
 function describe(cell) {
   const label = grid.labels[cell];
   if (label >= NEIGHBOUR_BASE) return grid.neighbours.find((n) => n.id === label).name;
   const name = regionName(grid.regions[label - 1]);
-  if (!latest?.detected) return `${name}: ${compact(regionPeople[label - 1])} people.`;
+  if (!latest) return name;
   const [humans, zombies, dead] = latest.regions.subarray((label - 1) * 3, label * 3);
   return `${name}: ${compact(humans)} humans, ${compact(zombies)} zombies and ${compact(dead)} dead.`;
 }
@@ -335,16 +327,8 @@ function fail(error) {
 
 const isSealed = (id) => queue.items.some((item) => item.region === id);
 
-/** Updates the tools after the queue changes, and redraws. */
+/** Refreshes the status line after the queue changes, and redraws. */
 function afterEdit() {
-  const empty = queue.items.length === 0;
-  edit.enable('undo', !empty);
-  edit.enable('clear', !empty);
-  const options = grid.regions.map((region, k) => {
-    const sealed = isSealed(k + 1);
-    return { label: `${regionName(region)}${sealed ? ' (sealed)' : ''}`, value: k + 1, disabled: sealed };
-  });
-  seal.setOptions(options.sort((a, b) => a.label.localeCompare(b.label, 'en')));
   refreshStatus();
   app.redraw();
 }
@@ -389,10 +373,6 @@ function nationalCorners() {
 loadGrid()
   .then(async (loaded) => {
     grid = loaded;
-    regionPeople = new Float64Array(grid.regions.length);
-    grid.labels.forEach((label, i) => {
-      if (label < NEIGHBOUR_BASE) regionPeople[label - 1] += grid.population[i];
-    });
     map = createMap(grid);
     queue = createQueue(grid.width * grid.height);
     borderCorners = nationalCorners();
@@ -415,10 +395,10 @@ loadGrid()
     strain.onChange((key) => {
       const chosen = STRAINS.find((s) => s.key === key);
       if (!chosen) return;
-      advanced.value = chosen.params;
+      rates.value = chosen.params;
       startRun();
     });
-    advanced.onChange(() => {
+    rates.onChange(() => {
       strain.value = CUSTOM;
       const next = params();
       const current = run;
@@ -435,17 +415,6 @@ loadGrid()
       app.stage.classList.remove('zo-sealable');
       stroke = null;
       app.redraw();
-    });
-    seal.onChange((id) => sealRegion(id));
-    edit.onChange((name) => {
-      if (name === 'undo') {
-        queue.undo();
-        client.undo().catch(fail);
-      } else {
-        queue.clear();
-        client.clear().catch(fail);
-      }
-      afterEdit();
     });
 
     const stagePoint = (event) => {

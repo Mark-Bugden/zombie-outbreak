@@ -104,7 +104,9 @@ def shoot(page):
 
 def draw_ring(page):
     """Draws the card's blockade with the mouse: a closed ring of RING km around Prague."""
-    page.get_by_label("Draw blockade").check()
+    advanced = page.locator("summary", has_text="Advanced")
+    advanced.click()
+    page.get_by_label("Manual blockades").check()
     stage = page.locator(".dk-stage-content")
     stage.scroll_into_view_if_needed()
     box = stage.bounding_box()
@@ -120,7 +122,8 @@ def draw_ring(page):
     for point in points[1:]:
         page.mouse.move(*point, steps=2)
     page.mouse.up()
-    page.get_by_label("Draw blockade").uncheck()
+    page.get_by_label("Manual blockades").uncheck()
+    advanced.click()
     page.mouse.move(0, 0)
 
 

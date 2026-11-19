@@ -2,8 +2,8 @@
 // frame. worker.js wires it to messages; on its own it has no DOM or worker dependencies, so the
 // tests drive it directly.
 //
-// Until the detection day the outbreak is hidden: frames are painted as if nobody had been bitten,
-// and the crew waits. From then on it builds the queued cordons and seals, and frames show the truth.
+// Frames show the outbreak as it is from day 0, but the crew waits for the detection day. From then
+// on it builds the queued cordons and seals.
 //
 // The same engine runs the baseline, a run with no quarantine, in a second worker, with trace().
 
@@ -35,7 +35,6 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
   let blocks = null;
   let work = 0; // km built
   let applied = -1; // the whole km of work that `blocks` shows
-  let unseen = null; // what the map shows before detection: the starting population, and no zombies
   let enclosures = null;
   let regionCount = 0;
   const spares = [];
@@ -86,7 +85,6 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
       regionCount = czech.reduce((max, i) => Math.max(max, labels[i]), 0);
       queue = createQueue(width * height);
       blocks = new Uint8Array(width * height);
-      unseen = { S: Float64Array.from(population), Z: new Float64Array(width * height), R: new Float64Array(width * height) };
       enclosures = createEnclosures(grid);
     },
 
@@ -169,8 +167,7 @@ export function createEngine({ lastDay, detectionDay, buildSpeed }) {
     /** The current frame, painted into a recycled buffer when there is one. */
     frame() {
       const pixels = spares.pop() ?? new ArrayBuffer(grid.width * grid.height * 4);
-      const seen = detected() ? sim : unseen;
-      painter.paint(new Uint32Array(pixels), seen.S, seen.Z, seen.R, params.beta);
+      painter.paint(new Uint32Array(pixels), sim.S, sim.Z, sim.R, params.beta);
       return {
         day: sim.day,
         totals: totals(),

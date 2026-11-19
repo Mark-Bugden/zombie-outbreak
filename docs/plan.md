@@ -197,7 +197,7 @@ Split into three PRs, like step 3.
 - No model card. This demo doesn't need one (Mark, 2026-11-18); the data and the paper are credited in the manifest's `about`.
 - [x] Manifest: status `live`, and `built`.
 - [x] Released `v1.0.0` on 2026-11-18 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v1.0.0)), after checking the downloaded zip with the validator.
-- [ ] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft.
+- [x] Mark bumps the tag in the site's `data/projects.yaml` and takes the write-up out of draft (done 2026-11-18).
 
 ### 5. demo-kit `v0.2.0` (done 2026-11-18, ahead of schedule)
 - [x] Separate PR on demo-kit, done by another agent: the site's redesign tokens and fonts, dark as the default, and the tokens this demo's map needs (`--color-curve`, `--color-sodium`, `--color-halpha`).
@@ -218,13 +218,24 @@ Agreed with Mark on 2026-11-19. Copy edits and better thumbnails come after this
   - pointing at a region outlines it, which also shows what a click would seal
   - pointing at the chart reads off any day so far, with a crosshair and a tooltip
   - the dashed no-quarantine line shows only once something is planned, since until then it is the same run
-  - the notice goes after 8 seconds, on a click, or when a blockade or seal is added.
+  - the notice goes after 8 seconds, on a click, or when a blockade or seal is added (replaced in step 7).
 
 **6b. Light and dark images (kit `v0.3.0`, site, demo)**
 - [x] demo-kit `v0.3.0` (tagged 2026-11-19, [demo-kit#4](https://github.com/Mark-Bugden/demo-kit/pull/4)): the bundle contract allows two optional files, `thumb-light.webp` and `static-light.webp`, for the light theme, and the validator checks them.
-- [ ] The site ([Mark-Bugden.github.io#11](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/11)): the project card and the demo's loading still use the light image under the light theme, when the bundle has one; the site's validator moves to kit `v0.3.0`. It must merge before the site fetches `v1.1.0`.
+- [x] The site ([Mark-Bugden.github.io#11](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/11)): the project card and the demo's loading still use the light image under the light theme, when the bundle has one; the site's validator moves to kit `v0.3.0`.
 - [x] This demo: bump the kit, and render both themes' stills (`og.jpg` stays single, since link previews have no theme).
-- [ ] Release `v1.1.0`, then Mark bumps the tag in the site's `data/projects.yaml`.
+- [x] Released `v1.1.0` on 2026-11-19 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v1.1.0)), after checking the downloaded zip with the validator. The site moved to it in [Mark-Bugden.github.io#12](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/12), with the write-up's cordon → blockade change.
+  - From here on I tag releases and bump the site's tags, not Mark (Mark, 2026-11-19).
+
+### 7. Tweaks: release `v1.2.0`
+Asked for by Mark on 2026-11-19.
+- [x] **The outbreak shows from day 0.** The map, the status line and the hover readout show zombies before detection too. Detection now only starts the crew (and the notice). The status line says "outbreak not yet detected" until then.
+- [x] **Fewer controls.** "Seal a region" (the list), Undo and Clear are gone: a click on a region seals it, and Reset is the only way to take a seal or blockade back. Drawing moves into Advanced as **Manual blockades**. The controls are now the city, strain and speed in a row, with Advanced under them across the full width when open, its rates side by side.
+  - Without the list, sealing has no keyboard path.
+- [x] **Speed** starts at 2×.
+- [x] **The notice** says "Infection detected. Click on a region to build blockades and try to stop the spread." (Mark's wording), and stays until the first seal or blockade, a click on it, or a new run.
+- [x] Copy that these made wrong: the manifest's quarantine paragraph and one sentence of the write-up.
+- [ ] Release `v1.2.0`, and move the site to it.
 
 ## Open questions
 
