@@ -58,12 +58,10 @@ The reference implementation is `src/zombie_outbreak/model.py`, whose docstring 
 
 The look is called "the lights go out":
 
-- **Dark theme.** Population as sodium-amber (`#F6BE55`) lights on the navy background, zombies glowing H-alpha red (`#C2391B`), and the dead going dark.
-- **Light theme.** Ink density on the pale background, with red zombies.
+- **Dark theme.** Population as sodium-amber (`#f6be55`) lights on the navy background, zombies glowing ember red (`#c13c36`), and the dead going dark.
+- **Light theme.** Ink density on the pale background: viridis-blue (`#285388`) people and green (`#5ca24c`) zombies.
 
-These colours come from demo-kit v0.2.0's tokens, which match the site's design. The map reads `--color-bg`, `--color-surface`, `--color-text`, `--color-border` and `--color-curve`, and will read `--color-halpha` for zombies in 3c. The one demo-local token is `--zo-people` in `demo/src/demo.css`: sodium amber on dark, `--color-muted` on light. Like the kit, the demo is dark unless `<html data-theme="light">`.
-
-Still to check: H-alpha red on the dark background has lower contrast than the site's own pairs. Test it, and adjust the zombie colour on dark if needed.
+Since step 10, these colours are demo-kit v0.4.0's colour roles, which the site shares: people take the main highlight (`--color-accent`) and zombies the contrasting one (`--color-accent-2`), in the map and the chart. The map also reads `--color-bg`, `--color-surface`, `--color-text`, `--color-border` and `--color-curve`. The demo's own colours, in `demo/src/demo.css`, are the densest people and the front at its strongest (`--zo-people-peak`, `--zo-front-peak`) and the dead (`--zo-dead`). Like the kit, the demo is dark unless `<html data-theme="light">`.
 
 ## Repo layout (target)
 
@@ -247,7 +245,15 @@ Asked for by Mark on 2026-11-19: the controls go back on the side, and the whole
 Asked for by Mark on 2026-11-19: each change should be one PR that goes live when it merges, and the demo should be fully visible when its project page opens.
 - [x] **Release on merge.** `demo/package.json`'s `version` is the release. A PR that changes the demo must bump it, or CI fails. When it merges, the Demo workflow builds the bundle, sets `built` to that day, releases `v<version>` and starts the site's build (with the `SITE_DEPLOY_TOKEN` secret). The site now takes each project's latest release ([Mark-Bugden.github.io#16](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/16)), so there's no tag to push and no site PR.
 - [x] **Fits below the site's title.** On the project page, the title is now the only thing above the demo ([Mark-Bugden.github.io#17](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/17)). The site sets `--dk-fit-height` to the window's height less what sits above the demo, and `--zo-fit` reads it in place of `100dvh`. Standalone, nothing changes. Measured with the site's branch: fits at 1920×960, 1536×730 and 1440×790. At 1366×650 it is 37 px short, held by the stage's 14rem minimum.
-- [ ] Merging releases `v1.4.0`.
+- [x] Merging released `v1.4.0` on 2026-11-19.
+
+### 10. The shared palette: release `v1.5.0`
+Agreed with Mark on 2026-11-19 (see doctor-who-ratings' plan, "A shared palette"): the site and the demos share three colour roles, which demo-kit v0.4.0 provides.
+- [x] **Kit v0.4.0.** People take the main highlight, `--color-accent`, and zombies the contrasting one, `--color-accent-2`. That replaces `--color-sodium` for people, `--color-halpha` for zombies, and the light theme's ochre. Dark barely changes: zombies go from H-alpha `#c2391b` to ember `#c13c36`. On light, people are viridis blue `#285388` and zombies green `#5ca24c`.
+- [x] **The light theme's deeper shades.** Mark chose from three options rendered on the same run (2026-11-20). The densest people deepen to navy `#0f253f` and the front to deep green `#2d5923`, the same darkening the ochre and red had, and the dead stay charcoal `#2f3642`. That charcoal is ΔE 13 from the people and 7.7 from the navy, closer than the ochre was. The other options were the dead in pale grey (faint in the chart, at 2:1) or in a neutral charcoal with no deeper shades.
+- [x] **No colour names in the copy.** "What you're seeing" named amber, red and grey, which no longer fit the light theme. It now says the map is coloured like the chart, as a stand-in until Mark rewrites the paragraph. The opening still's alt text drops "in amber".
+- [x] Re-render the stills with `scripts/stills.py`.
+- [ ] Merging releases `v1.5.0`.
 
 ## Open questions
 
