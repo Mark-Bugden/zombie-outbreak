@@ -11,7 +11,7 @@
     "validate": "demo-kit validate dist/"
   },
   "dependencies": {
-    "@mark-bugden/demo-kit": "github:Mark-Bugden/demo-kit#v0.2.0"
+    "@mark-bugden/demo-kit": "github:Mark-Bugden/demo-kit#v0.3.0"
   },
   "devDependencies": {
     "vite": "8.3.8"

@@ -221,9 +221,9 @@ Agreed with Mark on 2026-11-19. Copy edits and better thumbnails come after this
   - the notice goes after 8 seconds, on a click, or when a blockade or seal is added.
 
 **6b. Light and dark images (kit `v0.3.0`, site, demo)**
-- [ ] demo-kit `v0.3.0`: the bundle contract allows two optional files, `thumb-light.webp` and `static-light.webp`, for the light theme, and the validator checks them.
-- [ ] The site: the project card and the demo's loading still use the light image under the light theme, when the bundle has one; the site's validator moves to kit `v0.3.0`.
-- [ ] This demo: bump the kit, and render both themes' stills (`og.jpg` stays single, since link previews have no theme).
+- [x] demo-kit `v0.3.0` (tagged 2026-11-19, [demo-kit#4](https://github.com/Mark-Bugden/demo-kit/pull/4)): the bundle contract allows two optional files, `thumb-light.webp` and `static-light.webp`, for the light theme, and the validator checks them.
+- [ ] The site ([Mark-Bugden.github.io#11](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/11)): the project card and the demo's loading still use the light image under the light theme, when the bundle has one; the site's validator moves to kit `v0.3.0`. It must merge before the site fetches `v1.1.0`.
+- [x] This demo: bump the kit, and render both themes' stills (`og.jpg` stays single, since link previews have no theme).
 - [ ] Release `v1.1.0`, then Mark bumps the tag in the site's `data/projects.yaml`.
 
 ## Open questions
