@@ -21,44 +21,51 @@
 }
 
 /*
- * The layout: the chart above the map, both the frame's full width, then the transport and status
- * line, then the controls. The kit puts the controls in a rail beside the stage on wide frames and
- * above it on narrow ones; here they go below on every width.
+ * The layout: the controls in a rail beside the chart, the map and the status line, as the kit has
+ * them on wide frames; on narrow ones they go below the map, so the chart and the map come first.
+ * The whole demo fits in the window: the chart and the map's stage shrink with the window's height.
+ *
+ * The map's stage takes the map's shape (511 × 319 km, plus the map's padding) at the main column's
+ * full width, up to the manifest's height and to what the window leaves after the chart and the
+ * status line (--zo-fit). 100cqw is the frame's width (the frame is the kit's query container);
+ * on wide frames the main column is that minus the rail and the gap.
  */
+[data-demo] {
+  --zo-chart-height: clamp(120px, 20dvh, 180px);
+  --zo-fit: calc(100dvh - var(--zo-chart-height) - 8rem);
+  --zo-rail: 16rem;
+}
+
+[data-demo] .dk-stage {
+  height: max(14rem, min(var(--dk-stage-height), 100cqw * 343 / 535, var(--zo-fit)));
+  aspect-ratio: auto;
+}
+
 @container (min-width: 48rem) {
   [data-demo] .dk-body:not(.dk-body-full) {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: var(--zo-rail) minmax(0, 1fr);
+  }
+
+  [data-demo] .dk-stage {
+    height: max(14rem, min(var(--dk-stage-height), (100cqw - var(--zo-rail) - var(--space-5)) * 343 / 535, var(--zo-fit)));
   }
 }
 
-[data-demo] .dk-rail {
-  order: 1;
-}
-
-/*
- * The map's stage takes the map's shape (511 × 319 km, plus the map's padding) at the frame's full
- * width (100cqw: the frame is the kit's query container), up to the manifest's height.
- */
-[data-demo] .dk-stage {
-  height: min(var(--dk-stage-height), 100cqw * 343 / 535);
-  aspect-ratio: auto;
+@container (max-width: 47.99rem) {
+  [data-demo] .dk-rail {
+    order: 1;
+  }
 }
 
 [data-demo] .zo-chart {
   display: block;
   width: 100%;
-  height: 180px;
+  height: var(--zo-chart-height);
   margin-bottom: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   touch-action: pan-y;
-}
-
-@container (max-width: 47.99rem) {
-  [data-demo] .zo-chart {
-    height: 160px;
-  }
 }
 
 /* The notice when the outbreak is detected, over the top of the map. A click dismisses it. */
@@ -110,8 +117,8 @@
 }
 
 /*
- * Advanced, folded away by default: the Manual blockades toggle, then the model's rates. It takes
- * the controls' whole width, under the other settings, with the rates side by side.
+ * Advanced, folded away by default: the Manual blockades toggle, then the model's rates, side by
+ * side where there is room (below the map on narrow frames).
  */
 [data-demo] .zo-group {
   gap: var(--space-4);

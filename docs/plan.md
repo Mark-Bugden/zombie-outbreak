@@ -235,7 +235,13 @@ Asked for by Mark on 2026-11-19.
 - [x] **Speed** starts at 2×.
 - [x] **The notice** says "Infection detected. Click on a region to build blockades and try to stop the spread." (Mark's wording), and stays until the first seal or blockade, a click on it, or a new run.
 - [x] Copy that these made wrong: the manifest's quarantine paragraph and one sentence of the write-up.
-- [ ] Release `v1.2.0`, and move the site to it.
+- [x] Released `v1.2.0` on 2026-11-19 ([release](https://github.com/Mark-Bugden/zombie-outbreak/releases/tag/v1.2.0)); the site moved to it in [Mark-Bugden.github.io#13](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/13), with the write-up's changed sentence.
+
+### 8. Controls on the side, and the demo fits the window: release `v1.3.0`
+Asked for by Mark on 2026-11-19: the controls go back on the side, and the whole demo should be visible without scrolling.
+- [x] **Controls on the side.** On wide frames the controls are a 16rem rail beside the chart, the map and the status line, as the kit lays them out. On narrow frames they stay below the map, so the chart and the map come first.
+- [x] **It fits the window.** The chart's height follows the window's (120 to 180 px, 20% of it), and the map's stage takes the map's shape at the main column's width, up to the manifest's 620 px and to what the window leaves after the chart and the status line. Measured in Edge, the rail, chart, map and status line all fit at 1920×960, 1440×800, 1280×720, 1366×650, 1024×700 and 820×1100; on a 390×760 phone, the chart, map and status line fit, with the controls below.
+- [ ] Release `v1.3.0`, and move the site to it.
 
 ## Open questions
 
