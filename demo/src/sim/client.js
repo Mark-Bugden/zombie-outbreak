@@ -37,8 +37,6 @@ export function createClient() {
     start: (run) => call('start', run), // reset() without painting: resolves to { day, totals }
     setParams: (params) => call('params', { params }), // resolves to the day the change takes effect
     addItem: (item) => call('add', { item }),
-    undo: () => call('undo'),
-    clear: () => call('clear'),
     advance: (days, spare) => call('advance', { days, spare }),
     trace: (days, every) => call('trace', { days, every }),
     repaint: (spare) => call('repaint', { spare }),

@@ -30,7 +30,7 @@ The population is WorldPop's 2020 estimate for the Czech Republic at 30 arc-seco
 
 ## The quarantine
 
-The outbreak is hidden until day 7: until then the map shows nothing amiss. You can plan at any time, by drawing blockades freehand or by sealing whole regions, but one crew builds everything, in the order you planned it, at 40 km a day from day 7.
+Nobody notices the outbreak until day 7. You can plan at any time, by sealing whole regions or by drawing blockades freehand, but one crew builds everything, in the order you planned it, at 40 km a day from day 7.
 
 On the grid, people and zombies move between neighbouring squares across the edge they share. So a blockade is a chain of square edges, and each edge is 1 km of fence. A freehand stroke is snapped onto the grid lines, so it has no gaps, and nothing crosses it once it's built. Sealing a region closes its borders with the other regions, but not its national border: zombies that cross into Germany, Poland, Austria or Slovakia leave the model, counted as exported.
 
