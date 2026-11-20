@@ -59,7 +59,7 @@ The reference implementation is `src/zombie_outbreak/model.py`, whose docstring 
 The look is called "the lights go out":
 
 - **Dark theme.** Population as sodium-amber (`#f6be55`) lights on the navy background, zombies glowing ember red (`#c13c36`), and the dead going dark.
-- **Light theme.** Ink density on the pale background: viridis-blue (`#285388`) people and green (`#5ca24c`) zombies.
+- **Light theme.** Ink density on the pale background: Cherenkov-blue (`#2456d3`) people and green (`#5ca24c`) zombies.
 
 Since step 10, these colours are demo-kit v0.4.0's colour roles, which the site shares: people take the main highlight (`--color-accent`) and zombies the contrasting one (`--color-accent-2`), in the map and the chart. The map also reads `--color-bg`, `--color-surface`, `--color-text`, `--color-border` and `--color-curve`. The demo's own colours, in `demo/src/demo.css`, are the densest people and the front at its strongest (`--zo-people-peak`, `--zo-front-peak`) and the dead (`--zo-dead`). Like the kit, the demo is dark unless `<html data-theme="light">`.
 
@@ -253,7 +253,13 @@ Agreed with Mark on 2026-11-19 (see doctor-who-ratings' plan, "A shared palette"
 - [x] **The light theme's deeper shades.** Mark chose from three options rendered on the same run (2026-11-20). The densest people deepen to navy `#0f253f` and the front to deep green `#2d5923`, the same darkening the ochre and red had, and the dead stay charcoal `#2f3642`. That charcoal is ΔE 13 from the people and 7.7 from the navy, closer than the ochre was. The other options were the dead in pale grey (faint in the chart, at 2:1) or in a neutral charcoal with no deeper shades.
 - [x] **No colour names in the copy.** "What you're seeing" named amber, red and grey, which no longer fit the light theme. It now says the map is coloured like the chart, as a stand-in until Mark rewrites the paragraph. The opening still's alt text drops "in amber".
 - [x] Re-render the stills with `scripts/stills.py`.
-- [ ] Merging releases `v1.5.0`.
+- [x] Merging released `v1.5.0` on 2026-11-20.
+
+### 11. A brighter light accent: release `v1.6.0`
+Mark found the light accent dull (2026-11-20), and chose Cherenkov blue `#2456d3` from three options rendered on the live site, with zombies staying green.
+- [x] **Kit v0.5.0** ([demo-kit#8](https://github.com/Mark-Bugden/demo-kit/pull/8)): people are Cherenkov blue on light. The densest people deepen to `#0d2766`, with the same darkening as before. The dead, charcoal `#2f3642`, now sit ΔE 24.5 from the people, up from 13.2.
+- [x] Re-render the stills with `scripts/stills.py`.
+- [ ] Merging releases `v1.6.0`.
 
 ## Open questions
 

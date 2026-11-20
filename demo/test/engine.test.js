@@ -7,7 +7,7 @@ import { createPainter } from '../src/render/paint.js';
 import { createEngine } from '../src/sim/engine.js';
 
 const DARK = { night: '#0a0e14', land: '#111722', people: '#f6be55', peoplePeak: '#e8ecf2', zombie: '#c13c36', frontPeak: '#e8ecf2', dead: '#9aa6b8' };
-const LIGHT = { night: '#f5f6f8', land: '#ffffff', people: '#285388', peoplePeak: '#0f253f', zombie: '#5ca24c', frontPeak: '#2d5923', dead: '#2f3642' };
+const LIGHT = { night: '#f5f6f8', land: '#ffffff', people: '#2456d3', peoplePeak: '#0d2766', zombie: '#5ca24c', frontPeak: '#2d5923', dead: '#2f3642' };
 const PARAMS = { beta: 0.01, alpha: 0.004, zeta: 0.05, diffusion: 1, flee: 1, threshold: 1, epsilon: 1e-3, dt: 0.1 };
 
 // 6 × 4 cells: a neighbour (21) down the left side, Czech cells elsewhere, 100 people each.
