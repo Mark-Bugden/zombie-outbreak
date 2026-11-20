@@ -6,7 +6,7 @@
   "tags": ["mathematical modelling", "PDEs", "epidemiology", "data visualisation"],
   "status": "live",
   "repo": "https://github.com/Mark-Bugden/zombie-outbreak",
-  "kitVersion": "0.4.0",
+  "kitVersion": "0.5.0",
   "built": "2026-11-19",
   "demo": { "entry": "demo.js", "height": 620, "needsWebGL": false },
   "writeup": "/projects/zombie-outbreak/",

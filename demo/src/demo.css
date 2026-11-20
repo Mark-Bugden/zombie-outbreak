@@ -13,7 +13,7 @@
 }
 
 :root[data-theme="light"] [data-demo] {
-  --zo-people-peak: #0f253f;
+  --zo-people-peak: #0d2766;
   --zo-front-peak: #2d5923;
   --zo-dead: #2f3642;
 }
