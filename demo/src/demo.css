@@ -57,15 +57,103 @@
   }
 }
 
+/*
+ * The panel above the map: the counts, then the chart's canvas, which takes the rest of
+ * --zo-chart-height. Each number has a slot of fixed width, wide enough for the longest it can be
+ * (10.69M, −1.23M, 365), so nothing moves as they change: the counts wrap by the panel's width
+ * alone, and the canvas's height follows. Where the panel is narrow, the counts are smaller.
+ */
 [data-demo] .zo-chart {
-  display: block;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
   height: var(--zo-chart-height);
   margin-bottom: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  container-type: inline-size;
+}
+
+[data-demo] .zo-chart canvas {
+  display: block;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   touch-action: pan-y;
+}
+
+[data-demo] .zo-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+[data-demo] .zo-counts > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+[data-demo] .zo-counts dt {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+[data-demo] .zo-counts dd {
+  min-width: 6.5ch;
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-demo] .zo-counts [data-key="day"] dd {
+  min-width: 3ch;
+}
+
+/* The chart's legend: a swatch before each series. */
+[data-demo] .zo-counts :is([data-key="humans"], [data-key="zombies"], [data-key="dead"]) dt::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+  background: var(--zo-swatch);
+}
+
+[data-demo] .zo-counts [data-key="humans"] { --zo-swatch: var(--color-accent); }
+[data-demo] .zo-counts [data-key="zombies"] { --zo-swatch: var(--color-accent-2); }
+[data-demo] .zo-counts [data-key="dead"] { --zo-swatch: var(--zo-dead); }
+
+@container (max-width: 46rem) {
+  [data-demo] .zo-counts {
+    column-gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  [data-demo] .zo-counts > div {
+    gap: var(--space-1);
+  }
+
+  [data-demo] .zo-counts dd {
+    font-size: var(--text-sm);
+  }
+}
+
+/*
+ * The status line keeps the height of two lines, so a message that wraps doesn't move the controls
+ * under it. On wide frames that is no taller than the Play and Reset buttons beside it.
+ */
+[data-demo] .dk-status {
+  display: flex;
+  align-items: center;
+  min-height: 2lh;
 }
 
 /* The notice when the outbreak is detected, over the top of the map. A click dismisses it. */

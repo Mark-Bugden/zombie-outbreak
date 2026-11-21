@@ -43,7 +43,8 @@ PADDING = 12  # the map's padding inside the stage, as in demo/src/render/map.js
 # A narrow page; this scale makes its stage about 1200 px wide.
 VIEWPORT = {"width": 540, "height": 1400}
 SCALE = 2.4
-READY = "/Day \\d+/.test(document.querySelector('.dk-status')?.textContent)"
+DAY = "+document.querySelector('.zo-counts [data-key=day] dd')?.textContent"  # NaN until the first frame
+READY = f"{DAY} >= 0"
 # The stage at 16:9, as the card shows it, and no detection notice over the map.
 STILL_STYLE = (
     "[data-demo] .dk-stage { height: auto !important; aspect-ratio: 16 / 9 !important; }"
@@ -148,12 +149,12 @@ def main():
         page.get_by_role("button", name="Play").click()
         page.get_by_label("Speed").select_option(label="4×")
         page.wait_for_function(
-            f"+(/Day (\\d+)/.exec(document.querySelector('.dk-status').textContent) || [0, 0])[1] >= {CARD_DAY}",
+            f"{DAY} >= {CARD_DAY}",
             timeout=120000,
         )
         page.get_by_role("button", name="Pause").click()
         page.wait_for_timeout(300)
-        status = page.locator(".dk-status").text_content()
+        status = " ".join(f'{page.locator(".zo-counts").inner_text()} {page.locator(".dk-status").text_content()}'.split())
         card = shoot(page)
         browser.close()
     server.shutdown()

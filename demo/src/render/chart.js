@@ -1,7 +1,8 @@
 // The chart: humans, zombies and the dead over the whole run, day 0 to the last day, on a canvas of
 // its own above the map. It shows the true numbers from day 0, even while the map still hides the
 // outbreak. A line marks today, so the timeline visibly moves even when little else does; a dashed
-// one marks the detection day. Pointing at the chart reads off any day so far.
+// one marks the detection day. Pointing at the chart reads off any day so far. The counts above it
+// (counts.js) are its legend, but for the key to the run with no quarantine, which it draws itself.
 
 // A new point when the day has moved on by at least this much.
 export const SAMPLE_DAYS = 0.5;
@@ -13,8 +14,7 @@ const SERIES = [
 ];
 const BASELINE_LABEL = 'Humans with no quarantine';
 const PAD = 12;
-const LEGEND_ROW = 20;
-const NOTE_ROW = 16; // the labels above the plot: today's day, and "detected"
+const NOTE_ROW = 16; // the labels above the plot: today's day, "detected", and the baseline's key
 const AXIS_ROW = 16; // the day labels under the plot
 
 /** A number in a few characters: 9.62M, 812k, 4,031. */
@@ -64,74 +64,23 @@ const millions = (value) => (value === 0 ? '0' : `${value / 1e6}M`);
 /**
  * Draws the chart over a canvas of `width` × `height` CSS pixels; ctx is already scaled to CSS
  * pixels. `colours` holds the lines (humans, zombies, dead) and the panel (panel, border, text,
- * muted); `font` is the text face. `total` is the top of the scale, `day` today, and `latest` the
- * current totals for the legend. `baseline`, if given, is the run with no quarantine
- * (sim/baseline.js); its humans are drawn dashed up to today. `pointer`, if given, is the x of a
- * pointer over the chart, which gets a crosshair and the values on that day.
+ * muted); `font` is the text face. `total` is the top of the scale, and `day` today. `baseline`, if
+ * given, is the run with no quarantine (sim/baseline.js); its humans are drawn dashed up to today.
+ * `pointer`, if given, is the x of a pointer over the chart, which gets a crosshair and the values
+ * on that day.
  */
-export function drawChart(ctx, { width, height }, history, { total, lastDay, detectionDay, day, colours, font, latest, baseline, pointer }) {
+export function drawChart(ctx, { width, height }, history, { total, lastDay, detectionDay, day, colours, font, baseline, pointer }) {
   const text = (size, weight = 400) => `${weight} ${size}px ${font}`;
   ctx.save();
   ctx.fillStyle = colours.panel;
   ctx.fillRect(0, 0, width, height);
   ctx.textBaseline = 'middle';
-
-  // Legend: a swatch, the name, and the latest value for each series, then the baseline's key,
-  // right-aligned, or on a row of its own when there is no room.
-  const items = SERIES.map(({ key, label }) => {
-    ctx.font = text(11);
-    const labelWidth = ctx.measureText(label).width;
-    ctx.font = text(13, 600);
-    const value = latest ? compact(latest[key]) : '–';
-    return { key, label, value, labelWidth, width: 16 + labelWidth + 6 + ctx.measureText(value).width };
-  });
-  let x = PAD;
-  let rows = 1;
-  items.forEach((item, i) => {
-    if (i && x + item.width > width - PAD) {
-      x = PAD;
-      rows++;
-    }
-    const y = PAD + (rows - 1) * LEGEND_ROW + LEGEND_ROW / 2;
-    ctx.fillStyle = colours[item.key];
-    ctx.fillRect(x, y - 1, 10, 2);
-    ctx.font = text(11);
-    ctx.fillStyle = colours.muted;
-    ctx.textAlign = 'left';
-    ctx.fillText(item.label, x + 16, y);
-    ctx.font = text(13, 600);
-    ctx.fillStyle = colours.text;
-    ctx.fillText(item.value, x + 16 + item.labelWidth + 6, y);
-    x += item.width + 20;
-  });
   const showBaseline = baseline?.days.length > 1;
-  if (showBaseline) {
-    ctx.font = text(11);
-    const keyWidth = 22 + ctx.measureText(BASELINE_LABEL).width;
-    let keyX = width - PAD - keyWidth;
-    if (keyX < x - 8) {
-      rows++;
-      keyX = PAD;
-    }
-    const y = PAD + (rows - 1) * LEGEND_ROW + LEGEND_ROW / 2;
-    ctx.save();
-    ctx.strokeStyle = colours.humans;
-    ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([3, 2]);
-    ctx.beginPath();
-    ctx.moveTo(keyX, y);
-    ctx.lineTo(keyX + 14, y);
-    ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = colours.muted;
-    ctx.fillText(BASELINE_LABEL, keyX + 22, y);
-  }
 
   // The plot: days across, people up, from 0 to the whole population, with recessive gridlines.
   ctx.font = text(10);
   const yLabels = width < 480 ? 28 : 34;
-  const notes = PAD + rows * LEGEND_ROW + 2;
+  const notes = 2;
   const plot = { x: PAD + yLabels, y: notes + NOTE_ROW, width: 0, height: 0 };
   plot.width = width - PAD - plot.x;
   plot.height = height - PAD - AXIS_ROW - plot.y;
@@ -191,6 +140,26 @@ export function drawChart(ctx, { width, height }, history, { total, lastDay, det
     ctx.fillText(detectedLabel, detectedX, noteY);
   }
 
+  // The baseline's key, at the right. Today's label gives way to it there, as the counts give the day.
+  let keyX = Infinity;
+  if (showBaseline) {
+    ctx.font = text(11);
+    keyX = plot.x + plot.width - 22 - ctx.measureText(BASELINE_LABEL).width;
+    ctx.save();
+    ctx.strokeStyle = colours.humans;
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(keyX, noteY);
+    ctx.lineTo(keyX + 14, noteY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = colours.muted;
+    ctx.textAlign = 'left';
+    ctx.fillText(BASELINE_LABEL, keyX + 22, noteY);
+  }
+
   // The lines: the baseline's humans, then the dead, zombies and humans so far.
   ctx.lineWidth = 2;
   ctx.lineJoin = 'round';
@@ -227,10 +196,12 @@ export function drawChart(ctx, { width, height }, history, { total, lastDay, det
   ctx.lineTo(Math.round(px(today)) + 0.5, bottom);
   ctx.stroke();
   ctx.restore();
-  ctx.font = text(11, 600);
-  ctx.fillStyle = colours.text;
-  ctx.textAlign = 'center';
-  ctx.fillText(todayLabel, todayX, noteY);
+  if (todayX + todayHalf + 8 < keyX) {
+    ctx.font = text(11, 600);
+    ctx.fillStyle = colours.text;
+    ctx.textAlign = 'center';
+    ctx.fillText(todayLabel, todayX, noteY);
+  }
 
   // The crosshair: the values on the day under the pointer, up to today.
   const i = pointer === null || pointer === undefined || pointer < plot.x - 8 || pointer > plot.x + plot.width + 8

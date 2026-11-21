@@ -268,6 +268,14 @@ Asked for by Mark on 2026-11-21: on the site's dark theme, the card showed Czech
 - [x] Re-render the stills with `scripts/stills.py`, which now pads them with the stage colour.
 - [ ] Merging releases `v1.7.0`.
 
+### 13. Counts, 1×, and a notice that waits for the crew: release `v1.8.0`
+Asked for by Mark on 2026-11-21: the status line's numbers changed every frame, and flickered when the sentence wrapped.
+- [x] **Counts above the chart.** The numbers move out of the status line into the chart's panel, in place of its legend: Day, Humans, Zombies, Dead, Exported and Saved, each in a slot of fixed width, so nothing moves as they change. Saved is the humans more than with no quarantine so far, and 0 until anything is planned. The chart keeps the key to its dashed line, and today's label gives way to it. Mark chose this from three options. The status line keeps only news (detection, the blockades' progress, the region under the pointer, and the end), and two lines' height.
+- [x] **Speed** starts at 1×.
+- [x] **The notice** stays until the crew has built every blockade and seal, a click on it, the end of the run, or a new run.
+- [x] **The model's list** in the manifest's `about` takes the write-up's wording for α and ζ ([Mark-Bugden.github.io#33](https://github.com/Mark-Bugden/Mark-Bugden.github.io/pull/33)).
+- [ ] Merging releases `v1.8.0`.
+
 ## Open questions
 
 - **Munz parameters.** The paper uses counts in a well-mixed population of 500, so converting them to density units is a judgement call. The write-up should say so.
