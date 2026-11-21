@@ -3,7 +3,7 @@
 // The simulation runs in a worker (sim/client.js), which also paints each frame. This thread keeps
 // the animation clock: each tick it owes the worker some simulated days (2 per second at 1×), sends
 // them when the last frame is back, and draws the newest frame with the borders and the quarantine
-// on top, and the chart above the map.
+// on top, and the counts and the chart above the map.
 //
 // The quarantine: regions sealed with a click, and blockades drawn on the map (Manual blockades,
 // under Advanced), join one build queue (sim/crew.js). In the code, blockades are cordons. This
@@ -19,6 +19,7 @@ import '@mark-bugden/demo-kit/tokens.scoped.css';
 import '@mark-bugden/demo-kit/frame.css';
 import './demo.css';
 import { group } from './controls.js';
+import { createCounts } from './counts.js';
 import { NEIGHBOUR_BASE, loadGrid } from './grid.js';
 import { SAMPLE_DAYS, compact, createHistory, drawChart } from './render/chart.js';
 import { drawCordons } from './render/cordons.js';
@@ -45,8 +46,8 @@ const CUSTOM = 'custom';
 const SNAP = { mouse: 14, pen: 14, touch: 24 };
 // For this many days after detection, the status line says the outbreak has been detected.
 const NEWS_DAYS = 6;
-// The notice on the map when the outbreak is detected. It stays until the first blockade or seal,
-// a click on it, or a new run.
+// The notice on the map when the outbreak is detected. It stays until the crew has built every
+// blockade and seal, a click on it, the end of the run, or a new run.
 const NOTICE = 'Infection detected. Click on a region to build blockades and try to stop the spread.';
 // How long the Advanced sliders must rest, in ms, before the baseline re-runs with their change.
 const SETTLE = 400;
@@ -57,7 +58,7 @@ const strain = select({
   label: 'Strain',
   options: [...STRAINS.map(({ label, key }) => ({ label, value: key })), { label: 'Custom', value: CUSTOM }],
 });
-const speed = select({ label: 'Speed', options: [{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '4×', value: 4 }], value: 2 });
+const speed = select({ label: 'Speed', options: [{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '4×', value: 4 }], value: 1 });
 const sliders = Object.fromEntries(SLIDERS.map(({ name, ...spec }) => [name, slider({ ...spec, value: STRAINS[0].params[name] })]));
 const rates = group(null, sliders, { className: 'zo-rates' }); // the model's rates: their value is the parameters
 const draw = toggle({ label: 'Manual blockades' });
@@ -145,12 +146,16 @@ const app = mount({
 const summary = createSummary(app.stage.closest('.dk-main'));
 app.stage.setAttribute('aria-label', 'Map of Czechia at 1 km resolution: where people live, where the zombie outbreak has spread, and the blockades drawn against it.');
 
-// The chart goes above the map, and the detection notice over the map's top edge.
+// The counts and the chart go above the map, in one panel, and the detection notice over the map's
+// top edge.
+const chartPanel = document.createElement('div');
+chartPanel.className = 'zo-chart';
+const counts = createCounts(chartPanel);
 const chartCanvas = document.createElement('canvas');
-chartCanvas.className = 'zo-chart';
 chartCanvas.setAttribute('role', 'img');
 chartCanvas.setAttribute('aria-label', `Chart of the humans, zombies and dead in Czechia, day by day, from day 0 to day ${LAST_DAY}.`);
-app.stage.closest('.dk-stage').before(chartCanvas);
+chartPanel.append(chartCanvas);
+app.stage.closest('.dk-stage').before(chartPanel);
 const notice = document.createElement('p');
 notice.className = 'zo-notice';
 notice.setAttribute('role', 'status');
@@ -173,7 +178,6 @@ function paintChart(pixelRatio) {
     day: latest?.day ?? 0,
     colours: colours.chart,
     font: colours.font,
-    latest: latest?.totals ?? null,
     baseline: queue.total > 0 ? baseline.trace : null, // until anything is planned, it is the same run
     pointer: chartPointer,
   });
@@ -215,9 +219,11 @@ function show(frame) {
   spare = frame.pixels;
   if (frame.detected && latest && !latest.detected) showNotice();
   latest = frame;
+  if (frame.ended || (queue.total > 0 && builtKm() === queue.total)) hideNotice();
   history.push(frame);
   if (frame.ended) app.pause();
   refreshStatus();
+  refreshCounts();
   showSummary();
   app.redraw();
 }
@@ -265,30 +271,46 @@ function startRun() {
     .catch(fail);
 }
 
+/** The km of the queue the crew has built so far. */
+const builtKm = () => Math.min(Math.floor((latest?.work ?? 0) + 1e-9), queue.total);
+
 /** The quarantine's progress, for the status line: '' when nothing is queued. */
 function cordonStatus(detected) {
   const total = queue.total;
   if (total === 0) return '';
   const km = (value) => `${number.format(value)} km`;
   if (!detected) return ` ${km(total)} of blockade planned, to be built once the outbreak is detected.`;
-  const built = Math.min(Math.floor(latest.work + 1e-9), total);
+  const built = builtKm();
   return built === total ? ` Blockades: all ${km(total)} built.` : ` Blockades: ${number.format(built)} of ${km(total)} built.`;
 }
 
+/** The status line when the pointer isn't over the map: news of the run. The numbers are in the counts. */
 function liveStatus() {
   if (!latest) return 'Starting the outbreak…';
   const { day, totals, ended, detected } = latest;
-  const base = queue.total > 0 ? baseline.at(day) : null;
-  const gap = base ? totals.humans - base.humans : 0;
-  const versus = Math.abs(gap) >= 1 ? ` (${compact(Math.abs(gap))} ${gap > 0 ? 'more' : 'fewer'} than with no quarantine)` : '';
-  const counts = `${compact(totals.humans)} humans${versus}, ${compact(totals.zombies)} zombies, ${compact(totals.dead)} dead`;
-  const crossed = totals.exported >= 1 ? `, and ${compact(totals.exported)} zombies have crossed the border` : '';
   if (ended) {
     const how = totals.zombies === 0 ? 'The outbreak died out' : 'The run ended';
-    return `${how} on day ${Math.round(day)}: ${counts}${crossed}.${cordonStatus(true)} Press Reset to run it again.`;
+    return `${how} on day ${Math.round(day)}.${cordonStatus(true)} Press Reset to run it again.`;
   }
-  const news = !detected ? 'outbreak not yet detected. ' : day < DETECTION_DAY + NEWS_DAYS ? 'outbreak detected. ' : '';
-  return `Day ${Math.floor(day)}: ${news}${counts}${crossed}.${cordonStatus(detected)}`;
+  // A plan made before detection says it waits for detection, so it needs no news of its own.
+  const planned = cordonStatus(detected);
+  if (!detected) return planned.trim() || 'Outbreak not yet detected.';
+  return `${day < DETECTION_DAY + NEWS_DAYS ? 'Outbreak detected.' : ''}${planned}`.trim();
+}
+
+/** The counts above the chart. Saved waits for the baseline to reach today. */
+function refreshCounts() {
+  if (!latest) {
+    counts.show(null);
+    return;
+  }
+  const { day, totals } = latest;
+  let saved = 0; // until anything is planned, the baseline is the same run
+  if (queue.total > 0) {
+    const base = baseline.at(day);
+    saved = base ? totals.humans - base.humans : null;
+  }
+  counts.show({ day, ...totals, saved });
 }
 
 const regionName = (region) => (region.code === 'CZ-PR' ? region.nameEn : `${region.nameEn} Region`);
@@ -336,16 +358,16 @@ function fail(error) {
 
 const isSealed = (id) => queue.items.some((item) => item.region === id);
 
-/** Refreshes the status line after the queue changes, and redraws. */
+/** Refreshes the status line and the counts after the queue changes, and redraws. */
 function afterEdit() {
   refreshStatus();
+  refreshCounts();
   app.redraw();
 }
 
 function addItem(item) {
   queue.add(item);
   client.addItem(item).catch(fail);
-  hideNotice();
   afterEdit();
 }
 
@@ -391,7 +413,7 @@ loadGrid()
       lastDay: LAST_DAY,
       every: SAMPLE_DAYS,
       onUpdate: () => {
-        refreshStatus();
+        refreshCounts();
         showSummary();
         app.redraw();
       },
