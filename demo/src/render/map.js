@@ -7,10 +7,13 @@ import { NEIGHBOUR_BASE } from '../grid.js';
 // Space around the map inside the stage, in CSS pixels.
 const PADDING = 12;
 
-/** The map's colours for the current theme, from the kit's tokens and the demo's --zo-* (demo.css). */
+/**
+ * The map's colours for the current theme, from the kit's tokens and the demo's --zo-* (demo.css).
+ * Around Czechia is the kit's stage colour, as in the other demos, so the empty land matches it.
+ */
 export function readColours(token) {
   return {
-    night: token('--color-bg'),
+    night: token('--color-surface'),
     land: token('--color-surface'),
     people: token('--color-accent'),
     peoplePeak: token('--zo-people-peak'),

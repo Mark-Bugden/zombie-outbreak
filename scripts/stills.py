@@ -7,7 +7,7 @@
   under its light theme. og.jpg stays dark only: link previews have no theme.
 
 It serves demo/dist/ locally, drives it with Playwright, and writes the images to demo/public/,
-fitted onto their theme's page colour and kept under the bundle contract's size limits. Each still
+fitted onto their theme's stage colour and kept under the bundle contract's size limits. Each still
 is of the map's stage alone, at 16:9. Build first:
 
     cd demo && npm run build && cd ..
@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "demo" / "dist"
 OUT = ROOT / "demo" / "public"
 THEMES = ("dark", "light")
-BACKGROUND = {"dark": (10, 14, 20), "light": (245, 246, 248)}  # --color-bg in each theme
+BACKGROUND = {"dark": (17, 23, 34), "light": (255, 255, 255)}  # --color-surface in each theme
 CARD_DAY = 30
 # The card's blockade: a ring around Prague, in cells (km), drawn before detection. It holds.
 PRAGUE = (174, 139)

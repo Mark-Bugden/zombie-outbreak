@@ -259,7 +259,14 @@ Agreed with Mark on 2026-11-19 (see doctor-who-ratings' plan, "A shared palette"
 Mark found the light accent dull (2026-11-20), and chose Cherenkov blue `#2456d3` from three options rendered on the live site, with zombies staying green.
 - [x] **Kit v0.5.0** ([demo-kit#8](https://github.com/Mark-Bugden/demo-kit/pull/8)): people are Cherenkov blue on light. The densest people deepen to `#0d2766`, with the same darkening as before. The dead, charcoal `#2f3642`, now sit ΔE 24.5 from the people, up from 13.2.
 - [x] Re-render the stills with `scripts/stills.py`.
-- [ ] Merging releases `v1.6.0`.
+- [x] Merging released `v1.6.0` on 2026-11-20.
+
+### 12. The kit's stage colour, and a new tagline: release `v1.7.0`
+Asked for by Mark on 2026-11-21: on the site's dark theme, the card showed Czechia on the page's black, unlike the other projects' cards.
+- [x] **Around Czechia is the stage colour.** The map's surround (the neighbouring countries and the stage's margins) is the kit's `--color-surface`, which the kit's stage and the other demos use, in place of `--color-bg`. Czechia's empty land already started from that colour, so only the national border now sets it apart. The dark card's background is `#111722`, as Rating the Regenerations' is.
+- [x] **Tagline.** "Simulating a zombie outbreak across the Czech Republic.", in Mark's words, in the manifest and the page description.
+- [x] Re-render the stills with `scripts/stills.py`, which now pads them with the stage colour.
+- [ ] Merging releases `v1.7.0`.
 
 ## Open questions
 
