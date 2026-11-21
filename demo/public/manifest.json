@@ -3,7 +3,7 @@
   "title": "Quantifying the Quarantine",
   "tagline": "Simulating a zombie outbreak across the Czech Republic.",
   "summary": "A zombie outbreak spreading across Czechia, simulated on a 1 km population map. Every square kilometre runs Munz et al.'s humans–zombies–removed model, with zombies wandering, humans fleeing and the dead rising, as a front of bites sweeps out from Prague, Brno or Ostrava. Draw blockades and seal regions to contain it, built by a single crew at a fixed pace.",
-  "tags": ["mathematical modelling", "PDEs", "epidemiology", "data visualisation"],
+  "tags": ["mathematical modelling", "PDEs", "epidemiology"],
   "status": "live",
   "repo": "https://github.com/Mark-Bugden/zombie-outbreak",
   "kitVersion": "0.5.0",
