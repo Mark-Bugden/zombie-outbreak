@@ -35,6 +35,10 @@ const DAYS_PER_SECOND = 2;
 // The most animation time one request may make up, in seconds. A device too slow to keep up runs
 // the outbreak more slowly instead of falling ever further behind.
 const MAX_LAG = 0.25;
+// Frames the first run holds on day 0 before its clock starts. Over a canvas's first few animated
+// frames, the browser moves it to the GPU and compiles shaders for it, which can freeze the page for
+// a few hundred ms when its shader cache is cold. Holding still lets that happen before anything moves.
+const WARM_UP_FRAMES = 10;
 const CUSTOM = 'custom';
 // How near a stroke must end, in CSS pixels, to its own start to close into a loop, or to a cordon
 // or the national border to join it. Fingers get more room than a mouse or pen.
@@ -68,6 +72,7 @@ let latest = null; // the newest frame: { day, totals, regions, ended, detected,
 let spare = null; // the newest frame's pixel buffer, to hand back to the worker
 let busy = false; // a frame request is out
 let owed = 0; // simulated days the animation clock has run ahead of the worker
+let warmUp = WARM_UP_FRAMES; // frames left to hold the first run on day 0
 let run = 0; // counts runs, so frames from a run that has been replaced are dropped
 let hoverCell = -1;
 let chartPointer = null; // the x of a pointer over the chart, in CSS pixels
@@ -106,9 +111,13 @@ const app = mount({
     }
     if (theme !== colourTheme) applyColours().then(() => client.repaint(takeSpare())).then(show).catch(fail);
     if (delta > 0 && latest && !latest.ended) {
-      const rate = DAYS_PER_SECOND * speed.value;
-      owed = Math.min(owed + delta * rate, MAX_LAG * rate);
-      pump();
+      if (warmUp > 0) {
+        warmUp--;
+      } else {
+        const rate = DAYS_PER_SECOND * speed.value;
+        owed = Math.min(owed + delta * rate, MAX_LAG * rate);
+        pump();
+      }
     }
     map.draw(ctx, width, height, (overlay, scale) => {
       const region = hoverRegion();
