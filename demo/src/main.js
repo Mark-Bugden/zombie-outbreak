@@ -100,7 +100,7 @@ const app = mount({
     const ctx = stage.getContext('2d');
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!map || !colours) {
-      ctx.fillStyle = read('--color-bg');
+      ctx.fillStyle = read('--color-surface');
       ctx.fillRect(0, 0, width, height);
       return;
     }
