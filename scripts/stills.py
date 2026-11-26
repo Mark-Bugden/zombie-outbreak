@@ -45,10 +45,10 @@ VIEWPORT = {"width": 540, "height": 1400}
 SCALE = 2.4
 DAY = "+document.querySelector('.zo-counts [data-key=day] dd')?.textContent"  # NaN until the first frame
 READY = f"{DAY} >= 0"
-# The stage at 16:9, as the card shows it, and no detection notice over the map.
+# The stage at 16:9, as the card shows it, and no detection notice or opening Play button over the map.
 STILL_STYLE = (
     "[data-demo] .dk-stage { height: auto !important; aspect-ratio: 16 / 9 !important; }"
-    " [data-demo] .zo-notice { display: none !important; }"
+    " [data-demo] :is(.zo-notice, .zo-play) { display: none !important; }"
 )
 
 
@@ -137,14 +137,13 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel=channel)
 
-        # The opening state: with reduced motion, the demo starts paused on day 0.
-        page = open_page(browser, url, reduced_motion="reduce")
+        # The opening state: the demo opens paused on day 0.
+        page = open_page(browser, url)
         opening = shoot(page)
         page.close()
 
         # The card: the default run with a ring around Prague, on CARD_DAY, paused there.
         page = open_page(browser, url)
-        page.get_by_role("button", name="Pause").click()
         draw_ring(page)
         page.get_by_role("button", name="Play").click()
         page.get_by_label("Speed").select_option(label="4×")
