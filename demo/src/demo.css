@@ -189,6 +189,32 @@
   display: none;
 }
 
+/*
+ * The opening Play button: the kit's primary button, larger, in the stage's top right corner. There
+ * the map shows Poland, or nothing where the stage is wider than the map, so the button covers no
+ * Czech region at any width, and every region can still be clicked before the run starts.
+ */
+[data-demo] .zo-play {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  font-size: var(--text-md);
+}
+
+@container (min-width: 48rem) {
+  [data-demo] .zo-play {
+    min-height: 3.5rem;
+    padding: 0 var(--space-6);
+    font-size: var(--text-lg);
+  }
+}
+
+[data-demo] .zo-play[hidden] {
+  display: none;
+}
+
 [data-demo] .dk-stage-content {
   touch-action: manipulation;
 }

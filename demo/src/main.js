@@ -10,6 +10,10 @@
 // thread keeps a copy of the queue to draw it; the worker's copy blocks each edge once it is built.
 // The crew starts on the detection day, but the outbreak is shown as it is from day 0.
 //
+// Each run opens paused on day 0, with a Play button over the map, so visitors can choose the
+// settings and plan the quarantine first. Playing, from that button or the kit's, starts the run and
+// takes the button away until the next run.
+//
 // The baseline, the same outbreak with no quarantine, runs ahead in a second worker
 // (sim/baseline.js), for the chart's faint line and the end summary's "saved".
 
@@ -36,9 +40,10 @@ const DAYS_PER_SECOND = 2;
 // The most animation time one request may make up, in seconds. A device too slow to keep up runs
 // the outbreak more slowly instead of falling ever further behind.
 const MAX_LAG = 0.25;
-// Frames the first run holds on day 0 before its clock starts. Over a canvas's first few animated
-// frames, the browser moves it to the GPU and compiles shaders for it, which can freeze the page for
-// a few hundred ms when its shader cache is cold. Holding still lets that happen before anything moves.
+// Frames the first run holds on day 0 once it plays, before its clock starts. Over a canvas's first
+// few animated frames, the browser moves it to the GPU and compiles shaders for it, which can freeze
+// the page for a few hundred ms when its shader cache is cold. Holding still lets that happen before
+// anything moves.
 const WARM_UP_FRAMES = 10;
 const CUSTOM = 'custom';
 // How near a stroke must end, in CSS pixels, to its own start to close into a loop, or to a cordon
@@ -48,7 +53,9 @@ const SNAP = { mouse: 14, pen: 14, touch: 24 };
 const NEWS_DAYS = 6;
 // The notice on the map when the outbreak is detected. It stays until the crew has built every
 // blockade and seal, a click on it, the end of the run, or a new run.
-const NOTICE = 'Infection detected. Click on a region to build blockades and try to stop the spread.';
+const NOTICE = 'Outbreak detected. Click on a region to build blockades and try to stop the spread.';
+// The kit's play icon, at the opening Play button's size.
+const PLAY_ICON = '<span class="dk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>';
 // How long the Advanced sliders must rest, in ms, before the baseline re-runs with their change.
 const SETTLE = 400;
 const number = new Intl.NumberFormat('en-GB');
@@ -103,6 +110,7 @@ const app = mount({
   reset: () => startRun(),
   status: 'Loading the population map…',
   render({ stage, width, height, pixelRatio, theme, delta, token: read }) {
+    if (app.playing && !opening.hidden) hideOpening();
     const ctx = stage.getContext('2d');
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (!map || !colours) {
@@ -162,6 +170,27 @@ notice.setAttribute('role', 'status');
 notice.hidden = true;
 notice.addEventListener('click', () => hideNotice());
 app.stage.closest('.dk-stage').append(notice);
+
+// The opening Play button, in the stage's top right corner, clear of every region (see demo.css).
+// Only the button takes the pointer, so the map around it stays clickable. It shows once the first
+// run is ready.
+const opening = document.createElement('button');
+opening.type = 'button';
+opening.className = 'dk-button dk-button-primary zo-play';
+opening.innerHTML = PLAY_ICON;
+opening.append('Play');
+opening.hidden = true;
+opening.addEventListener('click', () => app.play());
+app.stage.closest('.dk-stage').append(opening);
+const transport = app.stage.closest('.dk-main').querySelector('.dk-bar .dk-button-primary'); // the kit's Play/Pause
+app.pause();
+
+/** Takes the opening Play button away, handing keyboard focus on to the kit's Play/Pause. */
+function hideOpening() {
+  const keyboard = opening.matches(':focus-visible');
+  opening.hidden = true;
+  if (keyboard) transport?.focus();
+}
 
 /** Draws the chart, sizing its canvas to its box at `pixelRatio` first. */
 function paintChart(pixelRatio) {
@@ -245,8 +274,11 @@ function pump() {
   }).catch(fail);
 }
 
+/** Starts a new run in the opening state: day 0, paused, with the Play button over the map. */
 function startRun() {
   if (!client) return;
+  app.pause();
+  opening.hidden = false;
   const current = ++run;
   owed = 0;
   latest = null;
@@ -420,7 +452,9 @@ loadGrid()
     });
     await client.init(grid);
     await applyColours();
+    const pressed = app.playing; // the kit's Play, pressed while the map loaded
     startRun();
+    if (pressed) app.play();
 
     scenario.onChange(() => startRun());
     strain.onChange((key) => {
